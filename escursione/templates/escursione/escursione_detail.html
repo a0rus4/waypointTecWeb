@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ escursione.titolo }} - WayPoint{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- HERO HEADER: Immagine di copertina -->
+<div class="position-relative bg-dark" style="height: 400px; overflow: hidden;">
+    {% if escursione.foto_copertina %}
+        <img src="{{ escursione.foto_copertina.url }}" class="w-100 h-100" style="object-fit: cover; opacity: 0.7;" alt="{{ escursione.titolo }}">
+    {% else %}
+        <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-secondary text-white">Nessuna copertina</div>
+    {% endif %}
+
+    <div class="position-absolute bottom-0 start-0 w-100 p-4" style="background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
+        <div class="container">
+            <span class="badge bg-success mb-2 fs-6"><i class="bi bi-geo-alt-fill me-1"></i>{{ escursione.zona_geografica.nome }}</span>
+            <h1 class="text-white fw-bold display-4 mb-0">{{ escursione.titolo }}</h1>
+           <div class="mt-3 d-flex flex-wrap gap-2">
+                <span class="badge bg-light text-dark fs-6 border"><i class="bi bi-bar-chart-fill text-warning me-1"></i> Difficoltà: {{ escursione.get_difficolta_display }}</span>
+                <span class="badge bg-light text-dark fs-6 border"><i class="bi bi-graph-up-arrow text-primary me-1"></i> Dislivello: +{{ escursione.dislivello }}m</span>
+
+                <!-- BADGE VOTO MEDIO ITINERARIO -->
+                <span class="badge bg-light text-dark fs-6 border">
+                    <i class="bi bi-star-fill text-warning me-1"></i> Valutazione: {{ escursione.punteggio_medio }}
+                    <span class="text-muted small">/5</span>
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row g-5">
+        <!-- COLONNA SINISTRA -->
+        <div class="col-lg-8">
+
+            <h3 class="fw-bold mb-4 border-bottom pb-2">Il Percorso</h3>
+            <div class="lh-lg mb-5 text-dark" style="font-size: 1.1rem; text-align: justify;">
+                {{ escursione.descrizione|linebreaks }}
+            </div>
+
+            <!-- GALLERIA -->
+            {% if escursione.galleria.exists %}
+                <h4 class="fw-bold mb-4"><i class="bi bi-images me-2 text-success"></i>Galleria Fotografica</h4>
+                <div class="row g-3 mb-5">
+                    {% for foto in escursione.galleria.all %}
+                        <div class="col-md-4">
+                            <a href="{{ foto.immagine.url }}" target="_blank">
+                                <img src="{{ foto.immagine.url }}" class="img-fluid rounded-3 shadow-sm w-100" style="height: 200px; object-fit: cover;" alt="Foto galleria">
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- EQUIPAGGIAMENTO -->
+            <h4 class="fw-bold mb-4"><i class="bi bi-backpack4-fill me-2 text-success"></i>Equipaggiamento Richiesto</h4>
+            <ul class="list-group list-group-flush mb-5">
+                {% for item in escursione.equipaggiamento.all %}
+                    <li class="list-group-item bg-transparent border-0 px-0 py-2 d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i> {{ item.nome }}
+                    </li>
+                {% empty %}
+                    <li class="list-group-item bg-transparent border-0 px-0 text-muted">Nessun equipaggiamento specifico richiesto.</li>
+                {% endfor %}
+            </ul>
+        <!-- BANNER SBLOCCO RECENSIONE -->
+            {% if puo_recensire %}
+                <div class="alert alert-success d-flex align-items-center shadow-sm border-0 rounded-4 mb-5" role="alert">
+                    <div class="bg-white rounded-circle p-2 me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="bi bi-star-fill text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="alert-heading fw-bold mb-1 text-success">Bentornato sul sentiero!</h6>
+                        <p class="mb-0 small text-dark">Risulta che tu abbia già completato questo itinerario. La tua opinione è preziosa:
+                            <a href="#nuova-recensione" class="fw-bold text-success text-decoration-underline">lascia una recensione</a>
+                            per aiutare la community.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+          <!-- RECENSIONI E FEEDBACK -->
+            <h4 class="fw-bold mb-4 border-bottom pb-2 mt-5"><i class="bi bi-star-half text-warning me-2"></i>Recensioni degli Escursionisti</h4>
+
+            <!-- LISTA DELLE RECENSIONI ESISTENTI -->
+            <div class="mb-5">
+                {% for recensione in escursione.recensioni.all %}
+                    <div class="card border-0 shadow-sm mb-4 rounded-4 bg-light">
+                        <div class="card-body p-4">
+
+                            <!-- Intestazione Recensione: Autore, Data e Voto -->
+                            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                                <div>
+                                    <h6 class="fw-bold mb-0"><i class="bi bi-person-circle text-secondary me-2"></i>{{ recensione.autore.username }}</h6>
+                                    <small class="text-muted">{{ recensione.data_creazione|date:"d F Y" }}</small>
+                                </div>
+                                <div class="bg-white px-3 py-1 rounded-pill shadow-sm border border-warning border-opacity-25">
+                                    <span class="fw-bold text-dark fs-5">{{ recensione.voto }}</span><span class="text-muted">/5</span>
+                                    <i class="bi bi-star-fill text-warning ms-1"></i>
+                                </div>
+                            </div>
+
+                            <!-- Corpo Recensione -->
+                            <p class="mb-3 fs-6">{{ recensione.testo }}</p>
+
+                            <!-- Tasto Segnalazione (Per Escursionisti, escluso l'autore stesso e la guida) -->
+                            {% if user.is_authenticated and user != recensione.autore and user != escursione.guida %}
+                                <div class="text-end mb-2">
+                                    <form action="{% url 'segnala_recensione' recensione.id %}" method="POST" class="d-inline" onsubmit="return confirm('Confermi di voler segnalare questa recensione ai moderatori per contenuti inappropriati?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none small">
+                                            <i class="bi bi-flag-fill me-1"></i>Segnala ai moderatori
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+
+                            <!-- RISPOSTA UFFICIALE DELLA GUIDA -->
+                            {% if recensione.risposta_guida %}
+                                <div class="mt-3 p-3 bg-white border-start border-4 border-success rounded-3 shadow-sm">
+                                    <h6 class="fw-bold text-success mb-2"><i class="bi bi-chat-quote-fill me-2"></i>Risposta dell'organizzatore:</h6>
+                                    <p class="mb-0 small text-dark">{{ recensione.risposta_guida }}</p>
+                                </div>
+                            {% endif %}
+
+                            <!-- FORM RISPOSTA (Visibile esclusivamente alla Guida di questo itinerario se non ha ancora risposto) -->
+                            {% if user == escursione.guida and not recensione.risposta_guida %}
+                                <div class="mt-4 border-top pt-3">
+                                    <form action="{% url 'rispondi_recensione' recensione.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                            <textarea name="risposta_guida" class="form-control border-success border-opacity-50" rows="1" placeholder="Inserisci una replica ufficiale a {{ recensione.autore.username }}..." required></textarea>
+                                            <button class="btn btn-success fw-bold px-4" type="submit"><i class="bi bi-send-fill me-1"></i> Rispondi</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-center py-5 bg-light rounded-4 border border-dashed mb-4">
+                        <i class="bi bi-chat-square-text text-muted display-4 d-block mb-3"></i>
+                        <h5 class="fw-bold text-secondary">Nessuna recensione presente</h5>
+                        <p class="text-muted">Questo itinerario non ha ancora ricevuto valutazioni. Sii il primo a condividere la tua esperienza!</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- AREA DI INSERIMENTO NUOVA RECENSIONE -->
+            {% if user.is_authenticated and user != escursione.guida %}
+                <div id="nuova-recensione" class="card border-0 shadow-sm rounded-4 overflow-hidden mt-2 mb-5" style="background-color: #f8f9fa;">
+                    <div class="card-header bg-dark text-white py-3 border-0">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Lascia il tuo feedback</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <p class="text-muted small mb-4">Ricorda: puoi valutare l'itinerario solo se hai una prenotazione confermata per una delle sue uscite.</p>
+
+                        <form action="{% url 'crea_recensione' escursione.id %}" method="POST">
+                            {% csrf_token %}
+
+                            <div class="mb-4">
+                                <label for="voto" class="form-label fw-bold">Valutazione complessiva <span class="text-danger">*</span></label>
+                                <select name="voto" id="voto" class="form-select w-100 bg-white border-0 shadow-sm" required>
+                                    <option value="" selected disabled>Seleziona il voto...</option>
+                                    <option value="5">5 - Eccellente, super consigliato!</option>
+                                    <option value="4">4 - Molto buono</option>
+                                    <option value="3">3 - Nella media</option>
+                                    <option value="2">2 - Non mi ha convinto</option>
+                                    <option value="1">1 - Pessima esperienza</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="testo" class="form-label fw-bold">La tua esperienza <span class="text-danger">*</span></label>
+                                <textarea name="testo" id="testo" class="form-control bg-white border-0 shadow-sm" rows="4" placeholder="Descrivi il sentiero, l'organizzazione logistica e l'esperienza con la guida..." required></textarea>
+                            </div>
+
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-warning text-dark fw-bold px-4 py-2 shadow-sm rounded-3">
+                                    <i class="bi bi-star-fill me-1"></i> Pubblica Valutazione
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% elif not user.is_authenticated %}
+                <div class="alert alert-secondary text-center mt-2 mb-5 rounded-4 border-0 shadow-sm p-4">
+                    <i class="bi bi-lock-fill fs-1 d-block mb-3 text-muted"></i>
+                    <h5 class="fw-bold">Accesso Richiesto</h5>
+                    <p class="mb-0">Devi <a href="{% url 'login' %}" class="fw-bold text-decoration-none">accedere al tuo account</a> per poter lasciare una recensione.</p>
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- COLONNA DESTRA -->
+        <div class="col-lg-4">
+            <div class="sticky-top" style="top: 2rem;">
+
+                <!-- CARD GUIDA -->
+                <div class="card shadow-sm border-0 rounded-4 mb-4">
+                    <div class="card-body p-4 text-center">
+                        <div class="mb-3">
+                            <i class="bi bi-person-circle display-1 text-secondary"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">{{ escursione.guida.username }}</h5>
+                        <p class="text-muted small mb-2">Guida Ufficiale WayPoint</p>
+                        <div class="text-warning mb-3">
+                            <i class="bi bi-star-fill"></i>
+                            <span class="text-dark fw-bold ms-1">{{ escursione.punteggio_guida }}</span>
+                            <span class="text-muted small">/ 5</span>
+                        </div>
+                </div>
+
+                <!-- CARD CALENDARIO -->
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-header bg-success text-white p-3 rounded-top-4">
+                        <h5 class="mb-0 fw-bold"><i class="bi bi-calendar-event me-2"></i>Date Disponibili</h5>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {% if uscite_future %}
+                            <ul class="list-group list-group-flush rounded-bottom-4">
+                                {% for uscita in uscite_future %}
+                                    <li class="list-group-item p-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="fw-bold mb-0 text-primary">{{ uscita.data_ritrovo|date:"l d F Y" }}</h6>
+                                            <span class="badge bg-light text-dark border">{{ uscita.data_ritrovo|date:"H:i" }}</span>
+                                        </div>
+                                        <div class="small text-muted mb-3">
+                                            <i class="bi bi-geo-fill me-1"></i> Ritrovo: {{ escursione.punto_di_ritrovo }}
+                                        </div>
+
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="small">Posti: <strong class="{% if uscita.posti_occupati >= uscita.posti_totali %}text-danger{% endif %}">{{ uscita.posti_occupati }} / {{ uscita.posti_totali }}</strong></span>
+                                        </div>
+
+                                      <!-- FORM DI PRENOTAZIONE SICURO -->
+                                        <div class="d-grid mt-2">
+                                            {% if user.is_authenticated %}
+                                                {% if uscita.id in uscite_prenotate_utente %}
+                                                    <button class="btn btn-secondary w-100 rounded-3" disabled>
+                                                        <i class="bi bi-check2-circle me-2"></i> Già Iscritto / In coda
+                                                    </button>
+                                                {% else %}
+                                                    <form action="{% url 'prenota_uscita' uscita.id %}" method="POST">
+                                                        {% csrf_token %}
+                                                        {% if uscita.posti_occupati < uscita.posti_totali %}
+                                                            <button type="submit" class="btn btn-success fw-bold rounded-3 shadow-sm w-100">
+                                                                <i class="bi bi-ticket-perforated me-2"></i> Prenota
+                                                            </button>
+                                                        {% else %}
+                                                            <button type="submit" class="btn btn-warning fw-bold rounded-3 shadow-sm text-dark w-100">
+                                                                <i class="bi bi-bell-fill me-2"></i> Mettiti in Coda
+                                                            </button>
+                                                        {% endif %}
+                                                    </form>
+                                                {% endif %}
+                                            {% else %}
+                                                <a href="{% url 'login' %}" class="btn btn-outline-secondary w-100 rounded-3">
+                                                    Accedi per Prenotare
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="p-4 text-center text-muted">
+                                <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
+                                Al momento non ci sono date programmate per questo itinerario.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- CARD MAPPA FISSA (Collegata al modello Escursione) -->
+                {% if escursione.latitudine and escursione.longitudine %}
+                    <div class="card shadow-sm border-0 rounded-4 mt-4 overflow-hidden">
+                        <div class="bg-light p-2 text-center border-bottom">
+                            <small class="text-muted fw-bold"><i class="bi bi-map-fill me-1"></i>Punto di Ritrovo</small>
+                        </div>
+                        <div id="map-detail" style="height: 250px; width: 100%; z-index: 1;"></div>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPT MAPPA FISSO (Usa i dati di escursione e formatta i decimali correttamente) -->
+{% if escursione.latitudine and escursione.longitudine %}
+<!-- suppress JSUnresolvedReference -->
+<script>
+    /* global L */
+    document.addEventListener('DOMContentLoaded', function () {
+        const lat = {{ escursione.latitudine|stringformat:"f" }};
+        const lon = {{ escursione.longitudine|stringformat:"f" }};
+
+        const map = L.map('map-detail').setView([lat, lon], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const marker = L.marker([lat, lon]).addTo(map);
+
+
+        const popupContent =
+            '<div style="line-height: 1.5; text-align: center;">' +
+                '<b style="font-size: 14px;">{{ escursione.titolo|escapejs }}</b>' +
+                '<hr style="margin: 6px 0;">' +
+                '<small class="d-block mb-2">{{ escursione.punto_di_ritrovo|escapejs }}</small>' +
+                '<a href="https://maps.google.com/?q=' + lat + ',' + lon + '" ' +
+                   'class="btn btn-sm btn-primary py-1 px-2 text-white text-decoration-none w-100" target="_blank" rel="noopener noreferrer">' +
+                    'Naviga qui' +
+                '</a>' +
+            '</div>';
+
+        marker.bindPopup(popupContent);
+    });
+</script>
+{% endif %}
+{% endblock %}

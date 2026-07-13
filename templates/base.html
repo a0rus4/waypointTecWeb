@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title> WayPoint - {% block title %} Home {% endblock %} </title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* --- ARCHITETTURA GRAFICA GLOBALE --- */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #fafdfa;
+        }
+
+        /* NAVBAR OVERLAY TRASPARENTE */
+        .navbar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1050;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
+            border: none !important;
+        }
+
+        /* SOVRASCRITTURA FOCUS BOOTSTRAP */
+        .form-control:focus {
+            border-color: #008543 !important;
+            box-shadow: 0 0 0 0.25rem rgba(0, 133, 67, 0.15) !important;
+        }
+
+        /* Azzeramento totale del focus per l'input di ricerca */
+        .carousel-caption form input:focus {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        /* Tonalità di accento per le sezioni interne */
+        .text-waypoint { color: #008543 !important; }
+        .btn-waypoint { background-color: #008543; color: white; border: none; }
+        .btn-waypoint:hover { background-color: #006637; color: white; }
+    </style>
+
+    {% block head %} {% endblock %}
+</head>
+<body>
+
+    <header class="app-header">
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-overlay py-3">
+            <div class="container-fluid px-4">
+
+                <a class="navbar-brand fw-extrabold fs-4 tracking-tight d-flex align-items-center text-white" href="{% url 'core:home' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo WayPoint" height="50" class="me-2">
+                    WayPoint
+                </a>
+
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-center">
+
+                        <li class="nav-item"> <a class="nav-link fw-semibold text-white" href="{% url 'core:home' %}">Home</a> </li>
+
+
+                        {% if user.is_authenticated %}
+                            {% if "Guida" in user.groups.first.name %}
+                                <li class="nav-item ms-2"> <a class="nav-link fw-semibold text-white" href="#">I miei Sentieri</a> </li>
+                                <li class="nav-item ms-2"> <a class="btn btn-outline-light btn-sm fw-bold rounded-pill" href="#">+ Crea Escursione</a> </li>
+                            {% elif "Escursionista" in user.groups.first.name %}
+                                <li class="nav-item ms-2"> <a class="nav-link fw-semibold text-white" href="#">Le mie Iscrizioni</a> </li>
+                            {% endif %}
+
+                            <li class="nav-item dropdown ms-3">
+                                <a class="nav-link dropdown-toggle fw-bold text-white" href="#" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle me-1"></i> {{ user.username }}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                                    <li><a class="dropdown-item" href="{% url 'profilo' %}">Profilo Personale</a></li>
+                                    {% if user.is_staff %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger fw-bold" href="/admin/">Pannello Admin</a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="post" action="{% url 'logout' %}" class="m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="dropdown-item w-100 text-start">
+                                                <i class="bi bi-box-arrow-right me-1"></i> Esci (Logout)
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        {% else %}
+                            <li class="nav-item ms-2"> <a class="btn btn-success btn-waypoint px-4 btn-sm fw-bold rounded-pill" href="{% url 'login' %}">Accedi</a> </li>
+                        {% endif %}
+
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow-1 position-relative">
+<!-- SISTEMA DI MESSAGGISTICA DJANGO (Notifiche Fluttuanti Auto-chiudenti senza X) -->
+        {% if messages %}
+            <div class="toast-container position-fixed top-0 end-0 p-4 mt-5" style="z-index: 1060;">
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} shadow-lg border-0 d-flex align-items-center auto-dismiss-alert" role="alert" style="min-width: 320px; transition: opacity 0.5s ease;">
+
+                        <!-- Icona dinamica -->
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill fs-4 text-success me-3"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="bi bi-x-octagon-fill fs-4 text-danger me-3"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill fs-4 text-warning me-3"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill fs-4 text-info me-3"></i>
+                        {% endif %}
+
+                        <div class="fw-medium text-dark w-100 text-center">
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- SCRIPT PER AUTODISTRUZIONE DOPO 3 SECONDI -->
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    const alerts = document.querySelectorAll('.auto-dismiss-alert');
+
+                    alerts.forEach(function(alert) {
+                        // Timer di 3 secondi (3000 ms)
+                        setTimeout(function() {
+                            // 1. Applica la dissolvenza (tramite la transizione CSS)
+                            alert.style.opacity = '0';
+
+                            // 2. Dopo 0.5s (il tempo della dissolvenza), rimuove il nodo dal DOM
+                            setTimeout(function() {
+                                alert.remove();
+                            }, 500);
+                        }, 3000);
+                    });
+                });
+            </script>
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+    <footer class="app-footer border-top text-center text-muted py-4 mt-auto">
+        <div class="container">
+            <p class="mb-1 fw-bold text-waypoint fs-5"><i class="bi bi-compass-fill me-1"></i> WayPoint Hiking System</p>
+            <p class="small mb-0">Progetto di Tecnologie Web | Autore: Francesco Ezio Garuffi</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

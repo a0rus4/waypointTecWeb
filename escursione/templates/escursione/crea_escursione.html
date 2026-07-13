@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Nuova Escursione - WayPoint{% endblock %}
+
+{% block content %}
+<!-- LIBRERIE LEAFLET PER LA MAPPA -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header bg-success text-white py-4 border-0">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white text-success rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 55px; height: 55px;">
+                            <i class="bi bi-map-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Pubblica Nuovo Itinerario</h4>
+                            <p class="mb-0 small opacity-75">Compila i dettagli tecnici per proporre una nuova escursione nel sistema.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5 bg-light">
+                    <form method="POST" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger mb-4 rounded-3 shadow-sm border-0 border-start border-danger border-4">
+                                <h6 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Attenzione!</h6>
+                                <p class="mb-0 small">Si sono verificati degli errori nella compilazione. Controlla i campi evidenziati in rosso qui sotto.</p>
+                            </div>
+                        {% endif %}
+
+                        <div class="row g-4 mb-4">
+                            <!-- COLONNA SINISTRA -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3 text-success border-bottom pb-2"><i class="bi bi-card-text me-2"></i>Dettagli Descrittivi</h6>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.titolo.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.titolo.label }}</label>
+                                    {{ form.titolo }}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.titolo.errors }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.zona_geografica.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.zona_geografica.label }}</label>
+                                    {{ form.zona_geografica }}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.zona_geografica.errors }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.descrizione.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.descrizione.label }}</label>
+                                    {{ form.descrizione }}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.descrizione.errors }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.foto_copertina.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.foto_copertina.label }}</label>
+                                    {{ form.foto_copertina }}
+                                    <div class="text-muted small mt-1" style="font-size: 0.75rem;">Carica un'immagine panoramica per attrarre gli escursionisti.</div>
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.foto_copertina.errors }}</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.foto_galleria.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.foto_galleria.label }}</label>
+                                    {{ form.foto_galleria }}
+                                    {% if form.foto_galleria.help_text %}
+                                        <div class="text-muted small mt-1" style="font-size: 0.75rem;">
+                                            <i class="bi bi-images me-1"></i>{{ form.foto_galleria.help_text }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.foto_galleria.errors }}</div>
+                                </div>
+                            </div>
+
+                            <!-- COLONNA DESTRA -->
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3 text-success border-bottom pb-2"><i class="bi bi-geo-alt-fill me-2"></i>Logistica e Tecnica</h6>
+
+                                <div class="mb-3">
+                                    <label for="{{ form.data_ritrovo.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.data_ritrovo.label }}</label>
+                                    {{ form.data_ritrovo }}
+                                    <div class="text-danger small mt-1 fw-bold">{{ form.data_ritrovo.errors }}</div>
+                                </div>
+
+                                <!-- --- INIZIO MAPPA CON RICERCA (GEOCODING) --- -->
+                                <div class="mb-4 p-3 border rounded-3 bg-white shadow-sm">
+                                    <label for="map-search-input" class="form-label fw-bold small text-success"><i class="bi bi-geo-alt me-1"></i>Cerca il Punto di Ritrovo</label>
+
+                                    <!-- Barra di ricerca -->
+                                    <div class="input-group mb-3">
+                                        <input type="text" id="map-search-input" class="form-control" placeholder="Es: Bismantova o Rifugio Vittoria...">
+                                        <button class="btn btn-outline-success fw-bold" type="button" id="map-search-btn">Cerca</button>
+                                    </div>
+
+                                    <!-- La mappa visiva -->
+                                    <div id="map" style="height: 250px; width: 100%; border-radius: 8px; z-index: 1;" class="mb-3 border"></div>
+
+                                    <!-- Campo discorsivo per Django (verrà pre-compilato, ma l'utente può modificarlo) -->
+                                    <div class="mb-2">
+                                        <label for="{{ form.punto_di_ritrovo.id_for_label }}" class="form-label fw-bold small text-secondary">Nome confermato per l'itinerario</label>
+                                        {{ form.punto_di_ritrovo }}
+                                        <div class="text-danger small mt-1 fw-bold">{{ form.punto_di_ritrovo.errors }}</div>
+                                    </div>
+
+                                    <!-- Campi nascosti per lat e lon -->
+                                    <div class="d-none">
+                                        {{ form.latitudine }}
+                                        {{ form.longitudine }}
+                                    </div>
+                                </div>
+                                <!-- --- FINE MAPPA CON RICERCA --- -->
+
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <label for="{{ form.difficolta.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.difficolta.label }}</label>
+                                        {{ form.difficolta }}
+                                        <div class="text-danger small mt-1 fw-bold">{{ form.difficolta.errors }}</div>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <label for="{{ form.dislivello.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.dislivello.label }}</label>
+                                        <div class="input-group">
+                                            {{ form.dislivello }}
+                                            <span class="input-group-text bg-white text-muted">metri</span>
+                                        </div>
+                                        <div class="text-danger small mt-1 fw-bold">{{ form.dislivello.errors }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <label for="{{ form.posti_totali.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.posti_totali.label }}</label>
+                                        {{ form.posti_totali }}
+                                        <div class="text-danger small mt-1 fw-bold">{{ form.posti_totali.errors }}</div>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <label for="{{ form.equipaggiamento.id_for_label }}" class="form-label fw-bold small text-secondary">{{ form.equipaggiamento.label }}</label>
+                                        {{ form.equipaggiamento }}
+                                        <div class="text-muted small mt-1" style="font-size: 0.75rem;"><i class="bi bi-info-circle me-1"></i>Usa CTRL per selezione multipla</div>
+                                        <div class="text-danger small mt-1 fw-bold">{{ form.equipaggiamento.errors }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="text-muted mb-4">
+
+                        <div class="d-flex justify-content-between justify-content-sm-end gap-2">
+                            <a href="{% url 'profilo' %}" class="btn btn-outline-secondary fw-bold px-4 rounded-3 shadow-sm">Annulla</a>
+                            <button type="submit" class="btn btn-success fw-bold px-4 px-sm-5 rounded-3 shadow-sm">
+                                <i class="bi bi-cloud-arrow-up-fill me-2"></i>Invia per Approvazione
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPT DELLA MAPPA E DELLA RICERCA -->
+
+<script>
+    /* global L */ // <-- Questo dice a PyCharm di ignorare gli errori "Unresolved variable L"
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inizializza la mappa sull'Italia usando const
+        const map = L.map('map').setView([41.8719, 12.5674], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Usiamo let perché il marker verrà sovrascritto
+        let marker;
+
+        // Funzione per piazzare il marker e compilare i campi
+        function setMarkerAndFields(lat, lng, displayName) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 14);
+
+            document.getElementById('id_latitudine').value = lat.toFixed(6);
+            document.getElementById('id_longitudine').value = lng.toFixed(6);
+
+            if(displayName) {
+                document.getElementById('id_punto_di_ritrovo').value = displayName;
+            }
+        }
+
+        // 1. Gestione del click diretto sulla mappa
+        map.on('click', function(e) {
+            // noinspection JSUnresolvedReference
+            setMarkerAndFields(e.latlng.lat, e.latlng.lng, "");
+        });
+
+        // 2. Gestione della Barra di Ricerca tramite l'API gratuita Nominatim (AJAX)
+        document.getElementById('map-search-btn').addEventListener('click', function() {
+            const query = document.getElementById('map-search-input').value;
+            if (!query) return;
+
+            // Chiamata AJAX all'API di OpenStreetMap
+            fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const result = data[0];
+
+                        // noinspection JSUnresolvedReference
+                        const shortName = result.display_name.split(',')[0];
+
+                        // noinspection JSUnresolvedReference
+                        setMarkerAndFields(parseFloat(result.lat), parseFloat(result.lon), shortName);
+                    } else {
+                        alert("Luogo non trovato. Prova un altro nome o selezionalo manualmente sulla mappa.");
+                    }
+                })
+                .catch(err => console.error("Errore nella ricerca:", err));
+        });
+
+        // Permette di cercare anche premendo il tasto "Invio" sulla tastiera
+        document.getElementById('map-search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Evita di inviare il form principale di Django
+                document.getElementById('map-search-btn').click();
+            }
+        });
+    });
+</script>
+{% endblock %}

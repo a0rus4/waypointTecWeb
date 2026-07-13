@@ -1,0 +1,55 @@
+# =============================================================================
+# WayPoint — .gitignore
+# =============================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Ambiente virtuale ---
+# pipenv crea di norma il virtualenv FUORI dalla cartella di progetto (in
+# ~/.local/share/virtualenvs/), quindi normalmente non compare qui. Queste
+# righe servono solo da rete di sicurezza nel caso in futuro venga creato un
+# venv locale (es. con PIPENV_VENV_IN_PROJECT=1 o python -m venv).
+.venv/
+venv/
+env/
+
+# --- Database locale ---
+# db.sqlite3 è lo stato attuale del database, rigenerabile in qualunque
+# momento con migrate + popola_db: non va versionato (è dati, non codice, e
+# cambia ad ogni test/uso). Le MIGRAZIONI invece (escursione/migrations/*.py
+# ecc.) vanno versionate: sono lo schema, non i dati, e senza di esse il
+# progetto clonato da un'altra persona non saprebbe come creare le tabelle.
+db.sqlite3
+db.sqlite3-journal
+
+# --- Segreti / configurazione locale ---
+.env
+
+# --- Editor / IDE ---
+.idea/
+.vscode/
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Log ---
+*.log
+
+# --- File statici raccolti (collectstatic) ---
+# Non usato attualmente (STATIC_ROOT non è impostato in settings.py), ma se in
+# futuro venisse eseguito "collectstatic" per la produzione, la cartella di
+# output andrebbe esclusa: è generata automaticamente a partire dagli asset
+# sorgente in escursione/static/ (quelli sì versionati).
+staticfiles/
+
+# NOTA su media/: la cartella NON è esclusa. Contiene sia le immagini "seed"
+# usate da popola_db.py (default_trekking*.jpg, trekking*_0.jpg, ecc.) sia le
+# eventuali foto caricate a mano tramite l'app. In un progetto in produzione
+# reale, media/ andrebbe tipicamente ignorata (i contenuti caricati dagli
+# utenti non sono codice sorgente); qui viene invece versionata di proposito,
+# perché questo è un progetto d'esame e senza le immagini seed la demo
+# popolata da popola_db mostrerebbe placeholder rotti dopo un clone.

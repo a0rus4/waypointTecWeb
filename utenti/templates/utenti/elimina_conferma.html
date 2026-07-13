@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Elimina Account - WayPoint{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm border-0 border-top border-danger border-4">
+                <div class="card-body p-4 text-center">
+                    
+                    <div class="text-danger mb-3">
+                        <i class="bi bi-exclamation-diamond-fill display-4"></i>
+                    </div>
+                    
+                    <h4 class="fw-bold text-dark mb-2">Rimozione Account</h4>
+                    <p class="text-muted small mb-4">
+                        Confermi di voler eliminare l'account <strong>@{{ user.username }}</strong>? 
+                        L'operazione rimuoverà definitivamente la tua utenza dal sistema.
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger py-2 fw-bold">
+                                <i class="bi bi-trash3-fill me-2"></i>Sì, procedi con la rimozione
+                            </button>
+                            <a href="{% url 'profilo' %}" class="btn btn-light py-2 text-secondary border">
+                                Annulla e ritorna
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

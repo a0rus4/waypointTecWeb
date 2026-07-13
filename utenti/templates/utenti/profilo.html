@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profilo Utente - WayPoint{% endblock %}
+
+{% block content %}
+<div class="position-relative py-5" style="min-height: 85vh; background-image: url('{% static 'images/slide3.jpg' %}'); background-size: cover; background-position: center; background-attachment: fixed;">
+
+    <div style="background-color: rgba(0, 0, 0, 0.5); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+
+    <div class="container position-relative mt-5" style="z-index: 1;">
+        <div class="row g-4 justify-content-center">
+
+            <!-- COLONNA SINISTRA: DATI UTENTE -->
+            <div class="col-lg-4 col-md-5">
+                <div class="card shadow-lg border-0 rounded-4 h-100 overflow-hidden" style="background-color: rgba(255, 255, 255, 0.95);">
+                    <div class="card-body text-center py-4 p-sm-4">
+                        <div class="d-inline-flex align-items-center justify-content-center bg-light text-secondary rounded-circle mb-3 shadow-sm" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-fill fs-1"></i>
+                        </div>
+                        <h4 class="card-title mb-1 fw-bold">{{ user_profile.first_name|default:user_profile.username }}</h4>
+                        <p class="text-muted small mb-3">@{{ user_profile.username }}</p>
+
+                        <!-- Badge Ruolo (Tutti allineati cromaticamente al verde/scuro) -->
+                        <span class="badge {% if is_admin %}bg-dark{% elif is_guida %}bg-success{% elif is_escursionista %}bg-success{% else %}bg-secondary{% endif %} px-3 py-2 rounded-pill mb-4 shadow-sm">
+                            {% if is_admin %}Amministratore
+                            {% elif is_guida %}Guida Ambientale
+                            {% elif is_escursionista %}Escursionista
+                            {% else %}Utente Registrato
+                            {% endif %}
+                        </span>
+
+                        <hr class="text-muted">
+
+                        <div class="text-start mt-3 px-2">
+                            <p class="mb-2 small"><i class="bi bi-envelope-fill text-muted me-2"></i><strong>Email:</strong> <span class="text-break">{{ user_profile.email }}</span></p>
+                            <p class="mb-2 small"><i class="bi bi-calendar-check-fill text-muted me-2"></i><strong>Membro dal:</strong> {{ user_profile.date_joined|date:"d F Y" }}</p>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4 pt-3">
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger w-100 fw-bold rounded-3">
+                                    <i class="bi bi-box-arrow-left me-1"></i> Disconnettiti
+                                </button>
+                            </form>
+                            <a href="{% url 'cambio_password' %}" class="btn btn-outline-secondary w-100 fw-bold rounded-3 mt-2">
+                                <i class="bi bi-key-fill me-1"></i> Cambia Password
+                            </a>
+                            {% if not is_admin %}
+                            <a href="{% url 'elimina_utente' %}" class="btn btn-link text-danger btn-sm small text-decoration-none mt-2">
+                                <i class="bi bi-trash3 me-1"></i>Elimina Account
+                            </a>
+
+
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLONNA DESTRA: DASHBOARD RUOLO -->
+            <div class="col-lg-8 col-md-7">
+
+                <!-- DASHBOARD AMMINISTRATORE -->
+                {% if is_admin %}
+                    <div class="card shadow-lg border-0 mb-4 rounded-4 overflow-hidden" style="background-color: rgba(255, 255, 255, 0.95);">
+                        <div class="card-header bg-dark text-white py-3 border-0">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-gear-fill me-2"></i>Amministrazione Sistema</h5>
+                        </div>
+                        <div class="card-body p-4 p-sm-5">
+                            <div class="row align-items-center">
+                                <div class="col-sm-8">
+                                    <h6 class="fw-bold">Gestione Avanzata</h6>
+                                    <p class="text-muted small mb-0">Hai i massimi privilegi di sistema. Accedi al backend di Django per gestire gli utenti, i permessi, i gruppi e moderare i contenuti del database.</p>
+                                </div>
+                                <div class="col-sm-4 text-sm-end mt-4 mt-sm-0">
+                                    <a href="{% url 'admin:index' %}" class="btn btn-dark rounded-3 shadow-sm">
+                                        <i class="bi bi-database-fill-gear me-2"></i>Pannello Admin
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- DASHBOARD GUIDA -->
+                {% elif is_guida %}
+                    <div class="card shadow-lg border-0 mb-4 rounded-4 overflow-hidden" style="background-color: rgba(255, 255, 255, 0.95);">
+                        <div class="card-header bg-success text-white py-3 border-0">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-shield-check me-2"></i>Strumenti di Pubblicazione Guida</h5>
+                        </div>
+                        <div class="card-body p-4 p-sm-5">
+                            <div class="row align-items-center mb-4 pb-2 border-bottom">
+                                <div class="col-sm-8 mb-3 mb-sm-0">
+                                    <h6 class="fw-bold">Organizzazione Itinerari Tecnici</h6>
+                                    <p class="text-muted small mb-0">Crea nuove schede escursionistiche inserendo dislivelli, punti di interesse e gradi di difficoltà.</p>
+                                </div>
+                                <div class="col-sm-4 text-sm-end">
+                                    <a href="{% url 'crea_escursione' %}" class="btn btn-success fw-bold rounded-3 shadow-sm">
+                                        <i class="bi bi-plus-circle me-1"></i> Crea Itinerario
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <!-- BOX 1: Percorsi Pubblicati -->
+                                <div class="col-6 col-sm-4">
+                                    <div class="p-3 bg-white border border-success border-opacity-25 rounded-3 text-center shadow-sm h-100">
+                                        <h3 class="fw-bold text-success mb-1">{{ escursioni_create_count }}</h3>
+                                        <p class="text-muted small mb-0">Percorsi Pubblicati</p>
+                                    </div>
+                                </div>
+
+                                <!-- BOX 2: Punteggio Globale Guida -->
+                                <div class="col-6 col-sm-4">
+                                    <div class="p-3 bg-white border border-warning border-opacity-50 rounded-3 text-center shadow-sm h-100">
+                                        <h3 class="fw-bold text-dark mb-1">
+                                            <i class="bi bi-star-fill text-warning fs-5 me-1"></i>
+                                            <!-- Peschiamo il punteggio dalla prima escursione in elenco. Se non ne ha, mostra 0.0 -->
+                                            {% if storico_escursioni %}
+                                                {{ storico_escursioni.first.punteggio_guida }}
+                                            {% else %}
+                                                0.0
+                                            {% endif %}
+                                        </h3>
+                                        <p class="text-muted small mb-0">Valutazione Utenti</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold mt-5 mb-3 border-bottom pb-2">Le tue pubblicazioni</h6>
+                            <div class="list-group list-group-flush">
+                              {% for esc in storico_escursioni %}
+                                    <div class="list-group-item px-0 bg-transparent border-bottom pb-3 mb-2">
+
+                                        <!-- RIGA PRINCIPALE -->
+                                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                                            <div class="mb-3 mb-md-0">
+                                                <a href="{% url 'dettaglio_escursione' esc.pk %}" class="text-decoration-none fw-bold text-dark fs-5">{{ esc.titolo }}</a>
+                                                <div class="small mt-1">
+                                                    <!-- TESTO CLICCABILE: Attiva la tendina delle date -->
+                                                    <!-- TESTO CLICCABILE MIGLIORATO: Attiva la tendina delle date -->
+                                                    <a data-bs-toggle="collapse" href="#collapseUscite{{ esc.id }}" role="button" aria-expanded="false" class="btn btn-sm btn-light border-success border-opacity-25 text-success fw-bold rounded-pill px-3 py-1 shadow-sm transition-all">
+                                                        <i class="bi bi-calendar3 me-1"></i> {{ esc.uscite_programmate.count }} Date Programmate
+                                                        <i class="bi bi-chevron-down ms-2" style="font-size: 0.8rem;"></i>
+                                                    </a>
+                                                    <span class="text-muted">&bull; <i class="bi bi-geo-alt me-1"></i> {{ esc.zona_geografica.nome }}</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-flex align-items-center gap-2">
+                                                {% if esc.approvata %}
+                                                    <span class="badge bg-success shadow-sm me-2">Approvata</span>
+                                                    <!-- Bottone per aggiungere la data -->
+                                                    <a href="{% url 'aggiungi_data_uscita' esc.id %}" class="btn btn-sm btn-outline-success shadow-sm fw-bold">
+                                                        <i class="bi bi-plus-circle me-1"></i> Nuova Data
+                                                    </a>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark shadow-sm me-2">In attesa</span>
+                                                {% endif %}
+
+                                                <!-- PULSANTE ELIMINA ITINERARIO (Cestino Rosso) -->
+                                                <form action="{% url 'elimina_escursione' esc.id %}" method="POST" class="m-0" onsubmit="return confirm('ATTENZIONE: Stai per eliminare definitivamente l\'intero itinerario. Tutte le date in calendario e le prenotazioni verranno distrutte irrimediabilmente. Sei sicuro?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm" title="Elimina l'intero itinerario">
+                                                        <i class="bi bi-trash3-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        <!-- ACCORDION: MENU A COMPARSA PER LE SINGOLE USCITE -->
+                                        <div class="collapse mt-3" id="collapseUscite{{ esc.id }}">
+                                            <div class="card card-body bg-light border-0 p-2 rounded-3 shadow-sm">
+                                                {% if esc.uscite_programmate.exists %}
+                                                    <ul class="list-group list-group-flush">
+                                                        {% for uscita in esc.uscite_programmate.all %}
+                                                            <li class="list-group-item bg-transparent px-2 py-2 d-flex justify-content-between align-items-center border-bottom-0 border-dashed">
+                                                                <span class="fs-6">
+                                                                    <i class="bi bi-arrow-return-right text-muted me-2"></i>
+                                                                    <strong>{{ uscita.data_ritrovo|date:"d F Y" }}</strong> alle {{ uscita.data_ritrovo|date:"H:i" }}
+                                                                    <span class="badge bg-white text-dark border ms-2 shadow-sm">Posti: {{ uscita.posti_occupati }}/{{ uscita.posti_totali }}</span>
+                                                                </span>
+
+                                                                <!-- PULSANTE ELIMINA SINGOLA DATA -->
+                                                                <form action="{% url 'elimina_uscita' uscita.id %}" method="POST" class="m-0" onsubmit="return confirm('Vuoi davvero annullare questa specifica data? Se ci sono escursionisti prenotati, verranno rimossi.');">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="btn btn-link text-danger btn-sm p-0 text-decoration-none fw-bold">
+                                                                        <i class="bi bi-x-circle-fill me-1"></i>Elimina
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    <p class="text-muted small mb-0 p-2 text-center">
+                                                        <i class="bi bi-info-circle me-1"></i> Nessuna data attualmente in programma per questo itinerario.
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted small mt-2">Non hai ancora pubblicato nessun itinerario base.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- DASHBOARD ESCURSIONISTA -->
+                {% elif is_escursionista %}
+                    <div class="card shadow-lg border-0 mb-4 rounded-4 overflow-hidden" style="background-color: rgba(255, 255, 255, 0.95);">
+                        <div class="card-header bg-success text-white py-3 border-0">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-compass me-2"></i>Zaino Personale</h5>
+                        </div>
+                        <div class="card-body p-4 p-sm-5">
+                            <p class="text-muted small mb-4">Monitora lo stato delle tue iscrizioni ai trekking guidati e visualizza i dettagli logistici.</p>
+
+                            <div class="row g-3 mb-5">
+                                <div class="col-6 col-sm-4">
+                                    <div class="p-3 bg-white border border-success border-opacity-25 rounded-3 text-center shadow-sm">
+                                        <h3 class="fw-bold text-success mb-1">{{ prossime_escursioni_count }}</h3>
+                                        <p class="text-muted small mb-0">Iscrizioni Totali</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lista delle prenotazioni dell'escursionista -->
+                            <h6 class="fw-bold mt-4 mb-3 border-bottom pb-2">Le tue prossime avventure</h6>
+                            <div class="list-group list-group-flush">
+                                {% for prenotazione in mie_prenotazioni %}
+                                    <div class="list-group-item px-0 bg-transparent d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+
+                                        <!-- Dettagli Escursione -->
+                                        <div>
+                                            <a href="{% url 'dettaglio_escursione' prenotazione.uscita.escursione.id %}" class="text-decoration-none fw-bold text-dark fs-6">{{ prenotazione.uscita.escursione.titolo }}</a>
+                                            <div class="small text-muted mt-1">
+                                                <i class="bi bi-calendar-event text-success me-1"></i>{{ prenotazione.uscita.data_ritrovo|date:"d F Y, H:i" }}
+                                            </div>
+                                        </div>
+
+                                        <!-- Badge di Stato e Tasto Cancella -->
+                                        <div class="d-flex flex-column align-items-end gap-2">
+                                            <div>
+                                                {% if prenotazione.stato == 'confermata' %}
+                                                    <span class="badge bg-success shadow-sm"><i class="bi bi-check-circle me-1"></i>Confermata</span>
+                                                {% elif prenotazione.stato == 'attesa' %}
+                                                    <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-hourglass-split me-1"></i>In Attesa</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger shadow-sm">Cancellata</span>
+                                                {% endif %}
+                                            </div>
+
+                                            <!-- Form sicuro per la disdetta (Mostrato solo se la prenotazione è attiva) -->
+                                            {% if prenotazione.stato != 'cancellata' %}
+                                                <form action="{% url 'cancella_prenotazione' prenotazione.id %}" method="POST" class="m-0" onsubmit="return confirm('Confermi di voler disdire in modo irreversibile questa prenotazione?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-3 px-2 py-1 shadow-sm" style="font-size: 0.8rem;">
+                                                        <i class="bi bi-x-circle me-1"></i> Disdici
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+
+                                    </div>
+                                {% empty %}
+                                    <p class="text-muted small mt-2">Non hai ancora prenotato nessuna uscita. Esplora i sentieri disponibili!</p>
+                                {% endfor %}
+                            </div>
+
+                            {% if raccomandazioni_esperienza or raccomandazioni_simili %}
+                                <div class="mt-5 pt-3 border-top">
+                                    <h5 class="fw-bold text-dark mb-4">
+                                        <i class="bi bi-magic text-warning me-2"></i>Suggeriti per te
+                                    </h5>
+
+                                    <div class="row g-4">
+                                        {% if raccomandazioni_esperienza %}
+                                        <div class="col-md-6">
+                                            <div class="card h-100 border-0 bg-light rounded-4 shadow-sm">
+                                                <div class="card-body p-4">
+                                                    <h6 class="fw-bold text-success mb-3">
+                                                        <i class="bi bi-graph-up-arrow me-1"></i> In base al tuo livello
+                                                    </h6>
+                                                    <p class="small text-muted mb-3">Abbiamo notato la tua zona di comfort. Ecco altri percorsi con la tua difficoltà preferita:</p>
+
+                                                    <ul class="list-group list-group-flush rounded-3">
+                                                        {% for esc in raccomandazioni_esperienza %}
+                                                            <li class="list-group-item bg-white border-0 mb-1 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+                                                                <a href="{% url 'dettaglio_escursione' esc.id %}" class="text-decoration-none fw-bold text-dark small text-truncate" style="max-width: 70%;">{{ esc.titolo }}</a>
+                                                                <span class="badge bg-light text-dark border">{{ esc.get_difficolta_display }}</span>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if raccomandazioni_simili %}
+                                        <div class="col-md-6">
+                                            <div class="card h-100 border-0 bg-light rounded-4 shadow-sm">
+                                                <div class="card-body p-4">
+                                                    <h6 class="fw-bold text-primary mb-3">
+                                                        <i class="bi bi-people-fill me-1"></i> Ispirato da altri
+                                                    </h6>
+                                                    <p class="small text-muted mb-3">Chi ha camminato sui tuoi stessi sentieri, ha amato molto anche queste mete:</p>
+
+                                                    <ul class="list-group list-group-flush rounded-3">
+                                                        {% for esc in raccomandazioni_simili %}
+                                                            <li class="list-group-item bg-white border-0 mb-1 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
+                                                                <a href="{% url 'dettaglio_escursione' esc.id %}" class="text-decoration-none fw-bold text-dark small text-truncate" style="max-width: 70%;">{{ esc.titolo }}</a>
+                                                                <span class="badge bg-light text-dark border"><i class="bi bi-star-fill text-warning me-1"></i>{{ esc.punteggio_medio }}</span>
+                                                            </li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- NESSUN RUOLO -->
+                    <div class="card shadow-lg border-0 rounded-4 overflow-hidden h-100 d-flex align-items-center justify-content-center" style="background-color: rgba(255, 255, 255, 0.95);">
+                        <div class="card-body p-4 p-sm-5 text-center">
+                            <i class="bi bi-exclamation-triangle text-warning display-4 mb-3 d-block"></i>
+                            <h5 class="fw-bold">Nessun Ruolo Associato</h5>
+                            <p class="text-muted small col-lg-10 mx-auto mb-0">Questo account non risulta ancora inserito nei gruppi operativi. Contatta l'amministratore del sistema per abilitare i permessi corretti.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

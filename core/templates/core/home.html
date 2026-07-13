@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Trova il tuo Sentiero{% endblock %}
+
+{% block content %}
+<!-- CAROUSEL HERO -->
+<div id="waypointCarousel" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
+
+    <div class="carousel-indicators" style="z-index: 20;">
+        <button type="button" data-bs-target="#waypointCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#waypointCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#waypointCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        <button type="button" data-bs-target="#waypointCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+        <button type="button" data-bs-target="#waypointCarousel" data-bs-slide-to="4" aria-label="Slide 5"></button>
+    </div>
+
+    <div class="carousel-inner">
+        <!-- SLIDE 1 -->
+        <div class="carousel-item active" style="min-height: 90vh;">
+            <img src="{% static 'images/slide1.jpg' %}" class="d-block w-100" alt="Montagne" style="height: 90vh; object-fit: cover;">
+            <div style="background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+            <div class="carousel-caption d-flex flex-column h-100 align-items-center justify-content-center" style="top: 0; bottom: 0;">
+                <h1 class="display-1 fw-extrabold mb-3 text-white">Esplora le vette più alte</h1>
+                <p class="fs-3 mb-5 text-white opacity-75">Trova escursioni guidate tra le montagne più affascinanti d'Italia.</p>
+
+                <div class="w-100 px-3" style="max-width: 850px;">
+                    <form class="d-flex bg-white p-2 rounded-pill shadow-lg" method="GET" action="{% url 'core:home' %}">
+                       <input name="q" aria-label="Cerca escursioni" value="{{ ricerca_attuale }}" class="form-control form-control-lg me-2 border-0 bg-transparent px-4 py-3 fs-4" type="search" placeholder="Cerca per nome o tag (es. Lago, Bosco)...">
+                        <button class="btn btn-success btn-lg px-5 fw-bold rounded-pill fs-4" type="submit">Cerca</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2 -->
+        <div class="carousel-item" style="min-height: 90vh;">
+            <img src="{% static 'images/slide2.jpg' %}" class="d-block w-100" alt="Boschi" style="height: 90vh; object-fit: cover;">
+            <div style="background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+            <div class="carousel-caption d-flex flex-column h-100 align-items-center justify-content-center" style="top: 0; bottom: 0;">
+                <h1 class="display-1 fw-extrabold mb-3 text-white">Cammina tra la natura</h1>
+                <p class="fs-3 mb-5 text-white opacity-75">Scopri sentieri nascosti tra boschi secolari e percorsi avventurosi.</p>
+
+                <div class="w-100 px-3" style="max-width: 850px;">
+                    <form class="d-flex bg-white p-2 rounded-pill shadow-lg" method="GET" action="{% url 'core:home' %}">
+                       <input name="q" aria-label="Cerca escursioni" value="{{ ricerca_attuale }}" class="form-control form-control-lg me-2 border-0 bg-transparent px-4 py-3 fs-4" type="search" placeholder="Cerca per nome o tag (es. Lago, Bosco)...">
+                        <button class="btn btn-success btn-lg px-5 fw-bold rounded-pill fs-4" type="submit">Cerca</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3 -->
+        <div class="carousel-item" style="min-height: 90vh;">
+            <img src="{% static 'images/slide3.jpg' %}" class="d-block w-100" alt="Laghi" style="height: 90vh; object-fit: cover;">
+            <div style="background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+            <div class="carousel-caption d-flex flex-column h-100 align-items-center justify-content-center" style="top: 0; bottom: 0;">
+                <h1 class="display-1 fw-extrabold mb-3 text-white">Rilassati ad alta quota</h1>
+                <p class="fs-3 mb-5 text-white opacity-75">Percorsi panoramici perfetti per allontanarsi dallo stress cittadino.</p>
+
+                <div class="w-100 px-3" style="max-width: 850px;">
+                    <form class="d-flex bg-white p-2 rounded-pill shadow-lg" method="GET" action="{% url 'core:home' %}">
+                        <input name="q" aria-label="Cerca escursioni" value="{{ ricerca_attuale }}" class="form-control form-control-lg me-2 border-0 bg-transparent px-4 py-3 fs-4" type="search" placeholder="Cerca per nome o tag (es. Lago, Bosco)...">
+                        <button class="btn btn-success btn-lg px-5 fw-bold rounded-pill fs-4" type="submit">Cerca</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4 -->
+        <div class="carousel-item" style="min-height: 90vh;">
+            <img src="{% static 'images/slide4.jpg' %}" class="d-block w-100" alt="Rifugi" style="height: 90vh; object-fit: cover;">
+            <div style="background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+            <div class="carousel-caption d-flex flex-column h-100 align-items-center justify-content-center" style="top: 0; bottom: 0;">
+                <h1 class="display-1 fw-extrabold mb-3 text-white">Dormi nei migliori Rifugi</h1>
+                <p class="fs-3 mb-5 text-white opacity-75">Vivi l'esperienza unica di un'alba sulle Alpi, organizzando tappe di più giorni.</p>
+
+                <div class="w-100 px-3" style="max-width: 850px;">
+                    <form class="d-flex bg-white p-2 rounded-pill shadow-lg" method="GET" action="{% url 'core:home' %}">
+                      <input name="q" aria-label="Cerca escursioni" value="{{ ricerca_attuale }}" class="form-control form-control-lg me-2 border-0 bg-transparent px-4 py-3 fs-4" type="search" placeholder="Cerca per nome o tag (es. Lago, Bosco)...">
+                        <button class="btn btn-success btn-lg px-5 fw-bold rounded-pill fs-4" type="submit">Cerca</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5 -->
+        <div class="carousel-item" style="min-height: 90vh;">
+            <img src="{% static 'images/slide5.jpg' %}" class="d-block w-100" alt="Natura" style="height: 90vh; object-fit: cover;">
+            <div style="background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.6)); position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></div>
+
+            <div class="carousel-caption d-flex flex-column h-100 align-items-center justify-content-center" style="top: 0; bottom: 0;">
+                <h1 class="display-1 fw-extrabold mb-3 text-white">Avventure indimenticabili</h1>
+                <p class="fs-3 mb-5 text-white opacity-75">Immergiti nella natura in totale sicurezza grazie alle nostre guide esperte.</p>
+
+                <div class="w-100 px-3" style="max-width: 850px;">
+                    <form class="d-flex bg-white p-2 rounded-pill shadow-lg" method="GET" action="{% url 'core:home' %}">
+                       <input name="q" aria-label="Cerca escursioni" value="{{ ricerca_attuale }}" class="form-control form-control-lg me-2 border-0 bg-transparent px-4 py-3 fs-4" type="search" placeholder="Cerca per nome o tag (es. Lago, Bosco)...">
+                        <button class="btn btn-success btn-lg px-5 fw-bold rounded-pill fs-4" type="submit">Cerca</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- CONTROLLI CAROUSEL -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#waypointCarousel" data-bs-slide="prev" style="width: 5%;">
+        <span class="carousel-control-prev-icon" aria-hidden="true" style="width: 2.5rem; height: 3.5rem;"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#waypointCarousel" data-bs-slide="next" style="width: 5%;">
+        <span class="carousel-control-next-icon" aria-hidden="true" style="width: 2.5rem; height: 3.5rem;"></span>
+    </button>
+</div>
+
+<!-- BARRA FILTRI AVANZATI -->
+<div class="container my-4">
+    <div class="card shadow-sm border-0 rounded-4 bg-white">
+        <div class="card-body p-4">
+            <h6 class="fw-bold text-success mb-3"><i class="bi bi-funnel-fill me-2"></i>Filtra i risultati</h6>
+            <form method="GET" action="{% url 'core:home' %}" class="row g-3 align-items-end">
+                <!-- Mantiene attiva la query di testo anche quando si usano i filtri -->
+                <input type="hidden" name="q" value="{{ ricerca_attuale }}">
+
+                <div class="col-md-3">
+                    <label for="id_difficolta" class="form-label small fw-bold text-muted">Difficoltà Tecnica</label>
+                    <select id="id_difficolta" name="difficolta" class="form-select border-success border-opacity-25 bg-light">
+                        <option value="">Tutte le difficoltà</option>
+                        <option value="T" {% if difficolta_attuale == 'T' %}selected{% endif %}>Turistico (T)</option>
+                        <option value="E" {% if difficolta_attuale == 'E' %}selected{% endif %}>Escursionistico (E)</option>
+                        <option value="EE" {% if difficolta_attuale == 'EE' %}selected{% endif %}>Esperti (EE)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="id_dislivello" class="form-label small fw-bold text-muted">Dislivello Massimo (m)</label>
+                    <input id="id_dislivello" type="number" name="dislivello" min="0" step="50" class="form-control border-success border-opacity-25 bg-light" placeholder="Es. 800" value="{{ dislivello_attuale }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="id_data_da" class="form-label small fw-bold text-muted">A partire dal giorno</label>
+                    <input id="id_data_da" type="date" name="data_da" class="form-control border-success border-opacity-25 bg-light" value="{{ data_da_attuale }}">
+                </div>
+
+                <div class="col-md-3 d-flex flex-column gap-2">
+                    <div class="form-check mt-1">
+                        <input class="form-check-input border-success" type="checkbox" name="solo_disponibili" value="true" id="checkDisponibili" {% if solo_disponibili_attuale %}checked{% endif %}>
+                        <label class="form-check-label text-dark small fw-bold" for="checkDisponibili">
+                            Solo con posti liberi
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success fw-bold w-100 shadow-sm">Applica Filtri</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- GRIGLIA RISULTATI -->
+<div class="container my-5">
+    <div class="d-flex align-items-center mb-4">
+        <h2 class="fw-extrabold text-dark mb-0 me-2">Esplora i Sentieri</h2>
+        {% if ricerca_attuale or difficolta_attuale or dislivello_attuale or data_da_attuale or solo_disponibili_attuale %}
+            <span class="badge bg-light text-success border border-success rounded-pill px-3">Risultati filtrati</span>
+        {% endif %}
+    </div>
+
+    <div class="row">
+        {% for esc in escursioni %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden bg-white">
+
+                {% if esc.foto_copertina %}
+                <img src="{{ esc.foto_copertina.url }}" class="card-img-top" alt="{{ esc.titolo }}" style="height: 220px; object-fit: cover;">
+                {% endif %}
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-success fw-bold px-2 py-1">Difficoltà: {{ esc.get_difficolta_display }}</span>
+                    </div>
+
+                    <h4 class="card-title fw-bold text-dark mb-2">{{ esc.titolo }}</h4>
+                    <p class="card-text text-muted small flex-grow-1">{{ esc.descrizione|truncatewords:20 }}</p>
+
+                    <!-- BADGE DINAMICO PROSSIMA DATA -->
+                    <div class="my-3">
+                        {% if esc.prossima_data %}
+                            <div class="p-2 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25">
+                                <span class="text-success fw-bold small"><i class="bi bi-calendar-check me-1"></i> Prossima disponibilità:</span>
+                                <span class="d-block text-dark mt-1">{{ esc.prossima_data|date:"d F Y, H:i" }}</span>
+                            </div>
+                        {% else %}
+                            <div class="p-2 bg-light rounded-3 border">
+                                <span class="text-muted small"><i class="bi bi-calendar-x me-1"></i> Al momento nessuna data attiva</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="pt-2 border-top">
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-light text-muted border rounded-pill px-2 py-1" style="font-size: 0.75rem;">Dislivello: +{{ esc.dislivello }}m</span>
+                            <span class="badge bg-light text-muted border rounded-pill px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-map-fill me-1"></i>{{ esc.zona_geografica.nome }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 p-4 pt-0">
+                   <a href="{% url 'dettaglio_escursione' esc.pk %}" class="btn btn-outline-success w-100 fw-bold rounded-pill">Vedi Dettagli</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <h4 class="text-muted mb-3"><i class="bi bi-search display-4 d-block mb-3"></i>Nessun sentiero trovato con questi filtri.</h4>
+            <a href="{% url 'core:home' %}" class="btn btn-success mt-3 rounded-pill px-4 fw-bold shadow-sm">Rimuovi filtri e mostra catalogo</a>
+        </div>
+        {% endfor %}
+    </div>
+
+ <!-- Paginazione Bootstrap (Sempre visibile per feedback UX) -->
+    <nav aria-label="Navigazione pagine catalogo" class="mt-5 mb-4">
+        <ul class="pagination justify-content-center shadow-sm">
+
+            <!-- Tasto Precedente (Attivo o Disabilitato) -->
+            {% if escursioni.has_previous %}
+                <li class="page-item">
+                    <!-- Manteniamo attivi i filtri passandoli nell'URL -->
+                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.previous_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">
+                        <i class="bi bi-chevron-left me-1"></i> Precedente
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link text-muted bg-light"><i class="bi bi-chevron-left me-1"></i> Precedente</span>
+                </li>
+            {% endif %}
+
+            <!-- Numeri di Pagina (Generati dinamicamente) -->
+            {% for num in escursioni.paginator.page_range %}
+                {% if escursioni.number == num %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link bg-success border-success text-white fw-bold">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link text-success" href="?page={{ num }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Tasto Successiva (Attivo o Disabilitato) -->
+            {% if escursioni.has_next %}
+                <li class="page-item">
+                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.next_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">
+                        Successiva <i class="bi bi-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link text-muted bg-light">Successiva <i class="bi bi-chevron-right ms-1"></i></span>
+                </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+
+</div>
+{% endblock %}
