@@ -101,8 +101,28 @@ def rispondi_recensione(request, recensione_id):
             messages.success(request, "La tua replica ufficiale è stata pubblicata.")
 
     return redirect('dettaglio_escursione', pk=recensione.escursione.id)
-
-
+# =============================================================================
+# TEORIA — @login_required e @require_POST:
+# =============================================================================
+# @login_required (django.contrib.auth.decorators): verifica
+# request.user.is_authenticated PRIMA di eseguire la funzione. Se l'utente è
+# anonimo, lo reindirizza alla pagina di login (settings.LOGIN_URL) invece di
+# lasciarlo proseguire.
+#
+# @require_POST (django.views.decorators.http): verifica request.method.
+# Se la richiesta non è una POST (es. è una GET), risponde 405 Method Not
+# Allowed e la funzione sottostante non viene nemmeno eseguita.
+#
+#   - Una richiesta GET può essere generata SENZA alcuna azione volontaria
+#     dell'utente
+#     Se questa vista fosse raggiungibile via GET, chiunque potrebbe indurre
+#     un utente già loggato a eseguirla a sua insaputa
+#   - La protezione CSRF (CsrfViewMiddleware, attiva globalmente in
+#     settings.py) si applica SOLO alle richieste POST: controlla che il
+#     modulo che le invia sia stato davvero generato dal
+#     nostro sito per la sessione corrente, e non da una pagina esterna.
+# =============================================================================
+@require_POST
 @login_required
 def segnala_recensione(request, recensione_id):
     """

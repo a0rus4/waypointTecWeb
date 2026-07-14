@@ -21,6 +21,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.mail import EmailMessage
 from django.db import transaction
 
+
 from .models import Escursione, Uscita, Prenotazione, FotoGalleria
 from .forms import EscursioneForm, UscitaForm
 from recensioni.models import Recensione
