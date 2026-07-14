@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from escursione.models import Escursione, Prenotazione
 from .models import Recensione
+from django.db import IntegrityError, transaction
 from .forms import RecensioneForm, RispostaGuidaForm
 from core.constants import GRUPPO_ESCURSIONISTI
 
@@ -54,19 +55,14 @@ def crea_recensione(request, escursione_id):
             recensione.autore = request.user
 
             try:
-                # TEORIA — perché il try/except invece di un controllo
-                # preventivo con .exists(): il vincolo unique_together
-                # (escursione, autore) del modello Recensione è imposto anche
-                # a livello di database. Anche se in teoria si potrebbe
-                # controllare prima con Recensione.objects.filter(...).exists(),
-                # rimane comunque una finestra temporale (check-then-act) in
-                # cui due richieste quasi simultanee dello stesso utente
-                # (doppio click, doppia scheda del browser) potrebbero
-                # superare entrambe il controllo preventivo. Affidarsi al
-                # vincolo di database e intercettare l'eccezione risultante
-                # è la protezione ultima e definitiva, indipendente da
-                # eventuali race condition applicative.
-                recensione.save()
+                # TEORIA — perché recensione.save() è avvolto in un
+                # transaction.atomic() annidato invece di essere chiamato
+                # direttamente: transaction.atomic() annidato crea invece un
+                # SAVEPOINT indipendente: se fallisce, fa fallback
+                # SOLO quello, lasciando la transazione esterna
+                # perfettamente utilizzabile subito dopo l'except.
+                with transaction.atomic():
+                    recensione.save()
                 messages.success(request, "Recensione pubblicata con successo. Grazie per il tuo contributo!")
             except IntegrityError:
                 messages.warning(request, "Hai già lasciato una valutazione per questo specifico itinerario.")
