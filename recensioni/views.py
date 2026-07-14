@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
-
+from django.views.decorators.http import require_POST
 from escursione.models import Escursione, Prenotazione
 from .models import Recensione
 from .forms import RecensioneForm, RispostaGuidaForm
