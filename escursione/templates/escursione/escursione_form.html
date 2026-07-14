@@ -1,11 +1,21 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Pianifica Nuova Data - WayPoint{% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<!-- Sfondo con immagine a tutta pagina -->
+<div class="position-relative d-flex align-items-center justify-content-center"
+     style="min-height: 85vh; background-image: url('{% static 'images/slide5.jpg' %}'); background-size: cover; background-position: center;">
+
+    <!-- Velo scuro per leggibilità -->
+    <div style="background-color: rgba(0,0,0,0.4); position: absolute; top:0; left:0; width:100%; height:100%; z-index:0;"></div>
+
+    <!-- Contenitore reale del form -->
+    <div class="container position-relative my-5" style="z-index: 1;">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-6">
-            <div class="card shadow border-0 rounded-4">
+            <!-- Card con effetto vetro (semitrasparente) -->
+            <div class="card shadow border-0 rounded-4" style="background-color: rgba(255, 255, 255, 0.95);">
                 <div class="card-header bg-success text-white p-4 rounded-top-4">
                     <h4 class="mb-0 fw-bold"><i class="bi bi-calendar-plus me-2"></i>Pianifica Nuova Data</h4>
                     <p class="mb-0 small text-light mt-1">Stai aggiungendo una data all'itinerario selezionato.</p>
@@ -39,5 +49,6 @@
             </div>
         </div>
     </div>
-</div>
+    </div><!-- /.container -->
+</div><!-- /sfondo -->
 {% endblock %}

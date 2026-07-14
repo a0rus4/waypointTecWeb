@@ -21,7 +21,6 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.mail import EmailMessage
 from django.db import transaction
 
-
 from .models import Escursione, Uscita, Prenotazione, FotoGalleria
 from .forms import EscursioneForm, UscitaForm
 from recensioni.models import Recensione
@@ -36,15 +35,11 @@ def _invia_notifica_di_massa(oggetto, messaggio, destinatari, from_email):
     TEORIA — To vs Bcc: django.core.mail.send_mail(..., recipient_list=[...])
     inserisce TUTTI gli indirizzi della lista nell'header "To" del messaggio:
     ogni destinatario, aprendo l'email, vedrebbe quindi l'indirizzo di tutti
-    gli altri iscritti alla stessa uscita (violazione di privacy). Per un vero
+    gli altri iscritti alla stessa uscita. Per un
     invio "in copia nascosta" occorre costruire un oggetto EmailMessage e
     valorizzare il parametro `bcc` (Blind Carbon Copy): gli indirizzi in bcc
     vengono recapitati normalmente, ma NON compaiono negli header del
     messaggio ricevuto dagli altri destinatari.
-
-    Si imposta `to=[]` (nessun destinatario diretto) e tutti gli iscritti in
-    `bcc`: è il pattern standard per le notifiche broadcast (newsletter,
-    avvisi di massa) quando i destinatari non devono conoscersi a vicenda.
     """
     if not destinatari:
         return
@@ -163,30 +158,10 @@ def prenota_uscita(request, uscita_id):
     stesso istante sull'ultimo posto disponibile): entrambe le richieste
     potrebbero leggere "1 posto libero" PRIMA che l'altra abbia scritto il
     proprio incremento, risultando in un overbooking (due prenotazioni
-    "confermate" per un solo posto). Questo problema si chiama TOCTOU
-    (Time-Of-Check to Time-Of-Use) race condition.
+    "confermate" per un solo posto).
 
-    La soluzione standard in Django è avvolgere l'intera sequenza
-    "leggi + decidi + scrivi" in una transazione (transaction.atomic()) e
-    bloccare la riga in lettura con select_for_update(): qualunque altra
-    transazione che tenti di leggere/scrivere la STESSA riga viene messa in
-    attesa finché la prima transazione non si conclude (commit o rollback),
-    rendendo l'intera operazione indivisibile agli occhi di altre richieste
-    concorrenti.
-    Nota tecnica per questo progetto: il database configurato è SQLite
-    (si veda waypoint_project/settings.py), che non implementa un vero
-    row-level locking: select_for_update() su SQLite non solleva errori ma
-    non produce nemmeno un lock aggiuntivo (Django lo ignora silenziosamente,
-    comportamento documentato). Ciò non vanifica comunque la correzione:
-    SQLite adotta di per sé un lock a livello di intero file durante una
-    transazione di scrittura, quindi racchiudere l'operazione in
-    transaction.atomic() serializza comunque le scritture concorrenti sulla
-    stessa base dati. select_for_update() viene mantenuto nel codice sia per
-    chiarezza semantica (comunica esplicitamente l'intento "sto per
-    modificare questa riga in modo esclusivo"), sia perché il progetto
-    diventerebbe automaticamente ancora più robusto passando in futuro a un
-    database che supporta il locking a livello di riga (PostgreSQL, MySQL/
-    InnoDB), senza dover modificare il codice applicativo.
+    quando una transazione scrive, nessun'altra transazione può scrivere finché
+    questa non si conclude.
     """
     uscita = get_object_or_404(Uscita, id=uscita_id)
 
@@ -201,13 +176,9 @@ def prenota_uscita(request, uscita_id):
         messages.warning(request, "Possiedi già una prenotazione attiva per questa data.")
         return redirect('dettaglio_escursione', pk=uscita.escursione.id)
 
-    # Blocco atomico: dal momento in cui select_for_update() legge la riga
-    # Uscita a quando la transazione termina, nessun'altra transazione può
-    # intromettersi a modificare la stessa riga (sui backend che supportano
-    # il locking; su SQLite la serializzazione è comunque garantita dal lock
-    # di scrittura a livello di database, si veda la nota sopra).
+
     with transaction.atomic():
-        uscita_bloccata = Uscita.objects.select_for_update().get(id=uscita.id)
+        uscita_bloccata = Uscita.objects.get(id=uscita.id)
 
         if uscita_bloccata.posti_occupati < uscita_bloccata.posti_totali:
             stato_prenotazione = 'confermata'
@@ -347,18 +318,7 @@ def cancella_prenotazione(request, prenotazione_id):
     notificando la disponibilità agli utenti in attesa" e "possibilità di
     cancellazione entro termini stabiliti".
 
-    FIX applicati rispetto alla versione originale:
-      1) Viene ora imposto un termine minimo di preavviso (ORE_LIMITE_
-         CANCELLAZIONE, definito in core/constants.py) per le prenotazioni
-         CONFERMATE: non era presente alcun controllo temporale, per cui era
-         possibile cancellare anche a un minuto dalla partenza, lasciando
-         la Guida senza margine per riorganizzare l'uscita.
-      2) L'aggiornamento di posti_occupati è ora racchiuso in una transazione
-         atomica con select_for_update(), per lo stesso motivo di
-         correttezza discusso in prenota_uscita.
-      3) La notifica agli utenti in lista d'attesa usa un vero Bcc
-         (_invia_notifica_di_massa), non più send_mail(recipient_list=...)
-         che esponeva a ciascun destinatario l'indirizzo di tutti gli altri.
+
     """
     prenotazione = get_object_or_404(Prenotazione, id=prenotazione_id, escursionista=request.user)
     uscita = prenotazione.uscita
@@ -383,8 +343,10 @@ def cancella_prenotazione(request, prenotazione_id):
         prenotazione.delete()
 
         if stato_cancellato == 'confermata':
-            # 2. Blocco della riga Uscita e liberazione del posto.
-            uscita_bloccata = Uscita.objects.select_for_update().get(id=uscita.id)
+            # 2. Liberazione del posto (il lock di scrittura a livello di
+            #    intero database, applicato da SQLite per ogni transazione,
+            #    rende superfluo select_for_update().
+            uscita_bloccata = Uscita.objects.get(id=uscita.id)
             uscita_bloccata.posti_occupati -= 1
 
             try:

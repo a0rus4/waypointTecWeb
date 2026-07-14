@@ -9,11 +9,20 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<div class="container my-5">
+<!-- Sfondo con immagine a tutta pagina -->
+<div class="position-relative d-flex align-items-center justify-content-center"
+     style="min-height: 85vh; background-image: url('{% static 'images/slide2.jpg' %}'); background-size: cover; background-position: center;">
+
+    <!-- Velo scuro per leggibilità -->
+    <div style="background-color: rgba(0,0,0,0.4); position: absolute; top:0; left:0; width:100%; height:100%; z-index:0;"></div>
+
+    <!-- Contenitore reale del form -->
+    <div class="container position-relative my-5" style="z-index: 1;">
     <div class="row justify-content-center">
         <div class="col-xl-10">
 
-            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+            <!-- Card con effetto vetro (semitrasparente) -->
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden" style="background-color: rgba(255, 255, 255, 0.95);">
                 <div class="card-header bg-success text-white py-4 border-0">
                     <div class="d-flex align-items-center">
                         <div class="bg-white text-success rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 55px; height: 55px;">
@@ -26,7 +35,7 @@
                     </div>
                 </div>
 
-                <div class="card-body p-4 p-md-5 bg-light">
+                <div class="card-body p-4 p-md-5">
                     <form method="POST" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
 
@@ -164,7 +173,8 @@
 
         </div>
     </div>
-</div>
+    </div><!-- /.container -->
+</div><!-- /sfondo -->
 
 <!-- SCRIPT DELLA MAPPA E DELLA RICERCA -->
 

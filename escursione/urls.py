@@ -16,7 +16,7 @@ urlpatterns = [
     # --- Prenotazione (richiede login + ruolo Escursionista, verificato in views.py) ---
     path('prenota/<int:uscita_id>/', views.prenota_uscita, name='prenota_uscita'),
 
-    # --- Gestione lato Guida (CRUD su itinerari e date) ---
+    # --- Gestione lato Guida ---
     path('crea/', views.EscursioneCreateView.as_view(), name='crea_escursione'),
     path('<int:escursione_id>/aggiungi-data/', views.UscitaCreateView.as_view(), name='aggiungi_data_uscita'),
     path('prenotazione/<int:prenotazione_id>/cancella/', views.cancella_prenotazione, name='cancella_prenotazione'),
