@@ -40,15 +40,19 @@ class RecensioniBaseTestCase(TestCase):
         cls.escursionista_futuro = User.objects.create_user(username='trekker_futuro', password='password123')
         cls.escursionista_futuro.groups.add(cls.gruppo_escursionisti)
 
+        # Inizializza l'entità radice (Escursione) vincolandola alla guida testata.
         cls.escursione = Escursione.objects.create(
             titolo="Sentiero delle Cascate", difficolta="T",
             dislivello=300, approvata=True, guida=cls.guida,
         )
+
+        # Genera un'istanza di Uscita il cui timestamp (data_ritrovo) è intenzionalmente collocato nel passato.
         cls.uscita_conclusa = Uscita.objects.create(
             escursione=cls.escursione,
             data_ritrovo=timezone.now() - timedelta(days=2),  # già avvenuta
             posti_totali=10,
         )
+        # Genera un'istanza di Uscita parallela collocata nel futuro.
         cls.uscita_futura = Uscita.objects.create(
             escursione=cls.escursione,
             data_ritrovo=timezone.now() + timedelta(days=5),  # deve ancora avvenire
@@ -68,30 +72,40 @@ class RecensioniBaseTestCase(TestCase):
             voto=4, testo="Bellissimo panorama!",
         )
 
-
+# Suite di validazione della business logic per la creazione di nuove recensioni
 class CreaRecensioneViewTests(RecensioniBaseTestCase):
+
     def test_partecipante_a_uscita_conclusa_puo_recensire(self):
         """
-        PERCORSO FELICE. Un escursionista con prenotazione confermata su
+        percorso nominale. Un escursionista con prenotazione confermata su
         un'uscita GIÀ CONCLUSA lascia una recensione valida. Creiamo un nuovo
         trekker apposta e lo iscriviamo all'uscita passata, poi verifichiamo sia
         il redirect sia che la riga sia stata SCRITTA nel database con autore e
         voto corretti (le recensioni passano da 1 a 2).
         """
+        # Istanziamento on-the-fly di un nuovo utente specifico per evitare collisioni di stato con recensione_base.
         nuovo_trekker = User.objects.create_user(username='nuovo_trekker', password='password123')
         nuovo_trekker.groups.add(self.gruppo_escursionisti)
+
+        # Consolida il prerequisito relazionale: la presenza di una prenotazione confermata per l'utente.
         Prenotazione.objects.create(
             escursionista=nuovo_trekker, uscita=self.uscita_conclusa, stato='confermata',
         )
 
+        # Avvia la sessione autenticata nel TestClient di Django.
         self.client.login(username='nuovo_trekker', password='password123')
+        # Risolve la destinazione passando l'ID dell'escursione come argomento nell'URL.
         url = reverse('crea_recensione', kwargs={'escursione_id': self.escursione.id})
+
+        # Esegue la chiamata POST iniettando il payload  della recensione.
         response = self.client.post(url, {'voto': 5, 'testo': 'Esperienza meravigliosa!'})
 
+        # Verifica che il controller abbia completato il flusso restituendo un HTTP 302 verso la view di dettaglio.
         self.assertRedirects(response, reverse('dettaglio_escursione', kwargs={'pk': self.escursione.id}))
+        # Esegue una query aggregata COUNT() per verificare che il recordset complessivo sia incrementato a 2.
         self.assertEqual(Recensione.objects.count(), 2)
+        # Esegue una query condizionale per accertare l'effettiva persistenza dei dati esatti sul disco (voto=5).
         self.assertTrue(Recensione.objects.filter(autore=nuovo_trekker, voto=5).exists())
-
     def test_non_si_puo_recensire_un_evento_non_ancora_concluso(self):
         """
         REGOLA TEMPORALE. Non basta essere iscritti: l'esperienza deve essere
@@ -100,11 +114,16 @@ class CreaRecensioneViewTests(RecensioniBaseTestCase):
         in anticipo va bloccato: ci aspettiamo un redirect gentile (302) e
         NESSUNA nuova recensione nel database (resta solo quella del setUp).
         """
+        # Sessione per l'utente non autorizzato temporalmente.
         self.client.login(username='trekker_futuro', password='password123')
         url = reverse('crea_recensione', kwargs={'escursione_id': self.escursione.id})
+
+        # Tenta una POST prematura.
         response = self.client.post(url, {'voto': 3, 'testo': 'Non ci sono ancora andato.'})
 
+        # Verifica che /view abbia abortito l'operazione dirottando l'utente (HTTP 302).
         self.assertEqual(response.status_code, 302)
+        # Assicura atomicamente che nessun record anomalo sia stato committato (il count deve restare fermo a 1).
         self.assertEqual(Recensione.objects.count(), 1)
 
     def test_non_si_puo_recensire_due_volte_la_stessa_escursione(self):
@@ -115,13 +134,17 @@ class CreaRecensioneViewTests(RecensioniBaseTestCase):
         tentativo deve fallire in modo CONTROLLATO (redirect 302, non un crash
         500) e non creare duplicati.
         """
+        # Sessione per l'utente che ha già generato un record valido in setUpTestData.
         self.client.login(username='trekker_passato', password='password123')
         url = reverse('crea_recensione', kwargs={'escursione_id': self.escursione.id})
+
+        # Sottomette un nuovo payload che infrange il vincolo unique_together a livello di DB/Model.
         response = self.client.post(url, {'voto': 2, 'testo': 'Seconda recensione, dovrebbe fallire.'})
 
+        # L'eccezione di integrità relazionale deve essere catturata e gestita con un redirect pulito, senza causare panic.
         self.assertEqual(response.status_code, 302)
+        # Verifica tramite aggregazione che i constraint del DB abbiano impedito fisicamente l'inserimento del duplicato.
         self.assertEqual(Recensione.objects.filter(autore=self.escursionista_passato).count(), 1)
-
 
 class RispondiRecensioneViewTests(RecensioniBaseTestCase):
     def test_solo_la_guida_organizzatrice_puo_rispondere(self):
@@ -133,10 +156,17 @@ class RispondiRecensioneViewTests(RecensioniBaseTestCase):
         redirect e, con refresh_from_db(), che il campo risposta_guida sia
         rimasto VUOTO — cioè che l'azione non abbia avuto alcun effetto.
         """
+        # Sessione malevola/non autorizzata per tentare la scrittura in un campo riservato (Privilege Escalation).
         self.client.login(username='trekker_futuro', password='password123')
+        # Risolve la route dedicata alla risposta, iniettando l'ID della recensione esistente.
         url = reverse('rispondi_recensione', kwargs={'recensione_id': self.recensione_base.id})
+
+        # Sottomette un payload di tipo UPDATE sul campo specifico della replica.
         response = self.client.post(url, {'risposta_guida': 'Risposta non autorizzata!'})
 
+        # Si aspetta che la routine di sicurezza espella l'utente intercettando il mismatch di ownership.
         self.assertEqual(response.status_code, 302)
+        # Invalida la cache locale dell'istanza e sincronizza lo stato in memoria estraendolo a forza dal disco.
         self.recensione_base.refresh_from_db()
+        # Asserisce che il rollback o la mancata chiamata a save() abbiano mantenuto intonsa la colonna bersaglio.
         self.assertEqual(self.recensione_base.risposta_guida, '')

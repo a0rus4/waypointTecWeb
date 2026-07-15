@@ -63,14 +63,18 @@ class OwnershipGuidaTests(EscursioneBaseTestCase):
         ignorarla in silenzio né rimandare altrove): testare lo status esatto
         rende chiaro che è un rifiuto di autorizzazione consapevole.
         """
+        # Effettua il login simulato con l'account della guida "estranea".
         self.client.login(username='guida_luigi', password='password123')
+        # Costruisce l'URL della view passando l'ID dell'escursione (appartenente a guida_1) nei kwargs.
         url = reverse('aggiungi_data_uscita', kwargs={'escursione_id': self.escursione.id})
 
+        # Invia una richiesta POST (che modificherebbe il DB) con dati validi per una nuova uscita.
         response = self.client.post(url, {
             'data_ritrovo': timezone.now() + timedelta(days=10),
             'posti_totali': 15,
         })
 
+        # il server deve rifiutare l'operazione restituendo esattamente il codice HTTP 403 (Accesso Negato).
         self.assertEqual(response.status_code, 403)
 
 
@@ -81,23 +85,33 @@ class PrenotazioneBusinessLogicTests(EscursioneBaseTestCase):
         # leggera per giustificare la cache di setUpTestData.
         self.url_prenota = reverse('prenota_uscita', kwargs={'uscita_id': self.uscita.id})
 
+    # Inizio test: verifica il percorso nominale di una prenotazione andata a buon fine.
     def test_prenotazione_con_posti_liberi_va_a_buon_fine(self):
         """
-        PERCORSO FELICE della prenotazione. Verifica TRE effetti insieme: il
+        Verifica TRE effetti insieme: il
         redirect dopo il POST; l'incremento REALE di posti_occupati sul database
         (refresh_from_db ricarica i valori dal DB, altrimenti controlleremmo una
         copia in memoria mai aggiornata); e che la Prenotazione nasca con stato
         'confermata' (posto garantito), non 'attesa'.
         """
+        # Autentica l'utente cliente.
         self.client.login(username='trekker_luca', password='password123')
 
+        # Invia la richiesta POST all'URL generato nel setUp() per scatenare la logica di prenotazione.
         response = self.client.post(self.url_prenota)
 
+        # Verifica 1/3: Controlla che, a successo avvenuto, l'utente venga reindirizzato (HTTP 302) alla pagina di dettaglio.
         self.assertRedirects(response, reverse('dettaglio_escursione', kwargs={'pk': self.escursione.id}))
+        # Forza l'aggiornamento dell'oggetto `self.uscita` in memoria rileggendolo dal database reale.
         self.uscita.refresh_from_db()
+        # Verifica 2/3: Controlla che il contatore dei posti occupati sia fisicamente aumentato a 1.
         self.assertEqual(self.uscita.posti_occupati, 1)
+        # Recupera il record di Prenotazione appena creato nel database per ispezionarlo.
         prenotazione = Prenotazione.objects.get(escursionista=self.escursionista, uscita=self.uscita)
+        # Verifica 3/3: Assicura che, essendoci posti liberi, lo stato del record sia 'confermata'.
         self.assertEqual(prenotazione.stato, 'confermata')
+
+
 
     def test_prenotazione_su_uscita_piena_finisce_in_lista_attesa(self):
         """
@@ -108,36 +122,60 @@ class PrenotazioneBusinessLogicTests(EscursioneBaseTestCase):
         'attesa' invece di essere rifiutata: così l'utente entra in coda e potrà
         subentrare in caso di disdette.
         """
+        # Manipola lo stato dell'istanza in memoria riempiendo l'uscita.
         self.uscita.posti_occupati = 2
+        # Salva la manipolazione nel database per preparare lo scenario del test.
         self.uscita.save()
 
+        # Autentica il cliente.
         self.client.login(username='trekker_luca', password='password123')
+        # Invia la richiesta POST per prenotare nonostante i posti siano esauriti.
         self.client.post(self.url_prenota)
 
+        # Ricarica i dati dell'uscita dal database.
         self.uscita.refresh_from_db()
+        # Verifica 1/2: Assicura che il sistema non sia andato in overbooking (i posti occupati restano 2).
         self.assertEqual(self.uscita.posti_occupati, 2)  # nessun overbooking
+        # Recupera la prenotazione generata.
         prenotazione = Prenotazione.objects.get(escursionista=self.escursionista, uscita=self.uscita)
+        # Verifica 2/2: Assicura che la logica abbia salvato la prenotazione, ma declassata allo stato 'attesa'.
         self.assertEqual(prenotazione.stato, 'attesa')
+
 
     def test_cancellazione_bloccata_sotto_il_termine_minimo(self):
         """
+        Probabilmente il test più complesso.
         REGOLA DI BUSINESS TEMPORALE (ORE_LIMITE_CANCELLAZIONE, core/constants).
         Un utente non può disdire "all'ultimo": impostiamo l'uscita tra sole 5
         ore (sotto le 24 di preavviso) e verifichiamo che la cancellazione venga
         RIFIUTATA. La prova non è lo status, ma gli effetti: la Prenotazione
         deve sopravvivere e il posto restare occupato (nessuna liberazione).
         """
+        # Modifica la data di ritrovo spostandola nel futuro ravvicinato (solo 5 ore da adesso).
+        # Serve a innescare la condizione di blocco. Stiamo simulando il contesto in cui l'utente tenta di cancellare la prenotazione la mattina stessa dell'uscita.
         self.uscita.data_ritrovo = timezone.now() + timedelta(hours=5)
+        # Occupa fisicamente un posto in memoria.
         self.uscita.posti_occupati = 1
+        # Registra la nuova configurazione dell'uscita nel database.
+        # Esegue una query UPDATE per consolidare le modifiche appena fatte (data e posti) nel database temporaneo di test.
         self.uscita.save()
+
+        # Crea manualmente (bypassando le views) una prenotazione già confermata per questo utente.
         prenotazione = Prenotazione.objects.create(
             escursionista=self.escursionista, uscita=self.uscita, stato='confermata',
         )
 
+        # Autentica l'utente.
+        # La view di cancellazione è protetta. Senza questo passaggio, il test riceverebbe un errore 403 (Accesso Negato) prima ancora di eseguire la logica temporale.
         self.client.login(username='trekker_luca', password='password123')
+        # Genera dinamicamente l'URL della view che gestisce la cancellazione.
         url = reverse('cancella_prenotazione', kwargs={'prenotazione_id': prenotazione.id})
+        # Esegue la chiamata POST, che dovrebbe attivare il tentativo di cancellazione.
         self.client.post(url)
 
+        # Verifica 1/2: Il record di prenotazione esiste ancora nel DB (la cancellazione è fallita e non l'ha cancellato).
         self.assertTrue(Prenotazione.objects.filter(id=prenotazione.id).exists())
+        # Ricarica i dati dell'uscita per verificare le variazioni del contatore.
         self.uscita.refresh_from_db()
+        # Verifica 2/2: Il posto risulta ancora occupato, dimostrando che il rollback o il blocco dell'azione hanno protetto l'integrità dei dati.
         self.assertEqual(self.uscita.posti_occupati, 1)
