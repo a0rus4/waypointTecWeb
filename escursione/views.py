@@ -58,6 +58,25 @@ def _invia_notifica_di_massa(oggetto, messaggio, destinatari, from_email):
     email.send(fail_silently=True)
 
 
+def _invia_email_singola(oggetto, messaggio, destinatario):
+    """
+    Invia un'email a UN singolo destinatario (campo "To"), usata per la conferma
+    di prenotazione. A differenza di _invia_notifica_di_massa (che usa il Bcc per
+    invii a più iscritti), qui il destinatario è uno solo e legittimamente vede
+    il proprio indirizzo. fail_silently=True: se l'invio non è configurato (in
+    sviluppo si usa il backend "console", si veda settings.py), la prenotazione
+    va comunque a buon fine senza sollevare eccezioni.
+    """
+    if not destinatario:
+        return
+    EmailMessage(
+        subject=oggetto,
+        body=messaggio,
+        from_email="noreply@waypoint.com",
+        to=[destinatario],
+    ).send(fail_silently=True)
+
+
 # =============================================================================
 # 1. VISTE PUBBLICHE
 # =============================================================================
@@ -93,6 +112,9 @@ class EscursioneDetailView(DetailView):
         ).order_by('data_ritrovo')
 
         context['puo_recensire'] = False
+        # ha_gia_recensito: distingue, nel template, il motivo per cui il form
+        # non è disponibile (già recensita vs mai partecipata).
+        context['ha_gia_recensito'] = False
 
         if self.request.user.is_authenticated:
             # ID delle uscite già prenotate da QUESTO utente per QUESTA
@@ -115,6 +137,7 @@ class EscursioneDetailView(DetailView):
                 escursione=self.object,
                 autore=self.request.user
             ).exists()
+            context['ha_gia_recensito'] = ha_gia_recensito
 
             if not ha_gia_recensito:
                 context['puo_recensire'] = Prenotazione.objects.filter(
@@ -205,6 +228,26 @@ def prenota_uscita(request, uscita_id):
             escursionista=request.user,
             uscita=uscita_bloccata,
             stato=stato_prenotazione
+        )
+
+    # Email di conferma: inviata SOLO dopo che il blocco transaction.atomic() è
+    # terminato con successo (commit), così non promettiamo una mail per una
+    # prenotazione che un eventuale rollback avrebbe annullato. La inviamo per il
+    # posto confermato; per la lista d'attesa la notifica avverrà invece quando
+    # un posto si libererà (flusso di cancellazione). In sviluppo, col backend
+    # "console" (settings.py), l'email compare nel terminale di runserver.
+    if stato_prenotazione == 'confermata' and request.user.email:
+        data_fmt = timezone.localtime(uscita.data_ritrovo).strftime('%d/%m/%Y alle %H:%M')
+        _invia_email_singola(
+            oggetto=f"Prenotazione confermata: {uscita.escursione.titolo}",
+            messaggio=(
+                f"Ciao {request.user.first_name or request.user.username},\n\n"
+                f"la tua prenotazione per \"{uscita.escursione.titolo}\" è confermata.\n\n"
+                f"Data e ora di ritrovo: {data_fmt}\n"
+                f"Punto di ritrovo: {uscita.escursione.punto_di_ritrovo}\n\n"
+                f"Buona avventura!\nIl team di WayPoint"
+            ),
+            destinatario=request.user.email,
         )
 
     return redirect('dettaglio_escursione', pk=uscita.escursione.id)

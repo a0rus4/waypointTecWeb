@@ -9,6 +9,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import DetailView, CreateView, DeleteView
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count
+from django.utils import timezone
 
 from .form import RegistrazioneForm
 from escursione.models import Escursione, Prenotazione
@@ -76,9 +77,24 @@ class ProfiloUtenteView(LoginRequiredMixin, DetailView):
         # escursioni basandosi su livello di esperienza e similarità con
         # escursioni già prenotate."
         if context['is_escursionista']:
-            prenotazioni_utente = Prenotazione.objects.filter(escursionista=user).order_by('-data_prenotazione')
+            prenotazioni_utente = Prenotazione.objects.filter(
+                escursionista=user
+            ).select_related('uscita', 'uscita__escursione')
             context['prossime_escursioni_count'] = prenotazioni_utente.count()
-            context['mie_prenotazioni'] = prenotazioni_utente
+
+            # Separiamo le iscrizioni in base alla data dell'uscita:
+            #  - FUTURE: esperienze ancora da vivere, sulle quali ha senso il
+            #    tasto "Disdici" (soggetto poi al termine delle 24h lato view);
+            #  - PASSATE: lo STORICO delle attività già svolte, che NON si possono
+            #    più disdire e che vanno tenute in una sezione a parte per non far
+            #    "esplodere" la pagina se l'utente ha molte partecipazioni.
+            adesso = timezone.now()
+            context['prenotazioni_future'] = prenotazioni_utente.filter(
+                uscita__data_ritrovo__gte=adesso
+            ).order_by('uscita__data_ritrovo')      # la più imminente per prima
+            context['prenotazioni_passate'] = prenotazioni_utente.filter(
+                uscita__data_ritrovo__lt=adesso
+            ).order_by('-uscita__data_ritrovo')     # la più recente per prima
 
             raccomandazioni_esperienza = []
             raccomandazioni_simili = []

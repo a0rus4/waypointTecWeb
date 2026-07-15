@@ -152,12 +152,13 @@
 
             <!-- AREA DI INSERIMENTO NUOVA RECENSIONE -->
             {% if user.is_authenticated and user != escursione.guida %}
+              {% if puo_recensire %}
                 <div id="nuova-recensione" class="card border-0 shadow-sm rounded-4 overflow-hidden mt-2 mb-5" style="background-color: #f8f9fa;">
                     <div class="card-header bg-dark text-white py-3 border-0">
                         <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Lascia il tuo feedback</h5>
                     </div>
                     <div class="card-body p-4">
-                        <p class="text-muted small mb-4">Ricorda: puoi valutare l'itinerario solo se hai una prenotazione confermata per una delle sue uscite.</p>
+                        <p class="text-muted small mb-4">Hai completato questo itinerario: racconta com'è andata.</p>
 
                         <form action="{% url 'crea_recensione' escursione.id %}" method="POST">
                             {% csrf_token %}
@@ -187,6 +188,21 @@
                         </form>
                     </div>
                 </div>
+              {% else %}
+                <!-- Utente loggato ma NON idoneo: spieghiamo il perché invece di
+                     mostrare un form che verrebbe comunque rifiutato dalla view. -->
+                <div class="alert alert-light border text-center mt-2 mb-5 rounded-4 shadow-sm p-4">
+                    {% if ha_gia_recensito %}
+                        <i class="bi bi-check2-circle fs-1 d-block mb-3 text-success"></i>
+                        <h5 class="fw-bold">Hai già recensito questo itinerario</h5>
+                        <p class="mb-0 text-muted">Grazie per il tuo contributo: si può lasciare una sola recensione per escursione.</p>
+                    {% else %}
+                        <i class="bi bi-hourglass-split fs-1 d-block mb-3 text-muted"></i>
+                        <h5 class="fw-bold">Non puoi ancora recensire</h5>
+                        <p class="mb-0 text-muted">Per lasciare una recensione devi aver partecipato a un'uscita di questo itinerario <strong>già conclusa</strong>, con una prenotazione confermata.</p>
+                    {% endif %}
+                </div>
+              {% endif %}
             {% elif not user.is_authenticated %}
                 <div class="alert alert-secondary text-center mt-2 mb-5 rounded-4 border-0 shadow-sm p-4">
                     <i class="bi bi-lock-fill fs-1 d-block mb-3 text-muted"></i>

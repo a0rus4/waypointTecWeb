@@ -220,16 +220,22 @@
                             <div class="row g-3 mb-5">
                                 <div class="col-6 col-sm-4">
                                     <div class="p-3 bg-white border border-success border-opacity-25 rounded-3 text-center shadow-sm">
-                                        <h3 class="fw-bold text-success mb-1">{{ prossime_escursioni_count }}</h3>
-                                        <p class="text-muted small mb-0">Iscrizioni Totali</p>
+                                        <h3 class="fw-bold text-success mb-1">{{ prenotazioni_future|length }}</h3>
+                                        <p class="text-muted small mb-0">In programma</p>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-sm-4">
+                                    <div class="p-3 bg-white border rounded-3 text-center shadow-sm">
+                                        <h3 class="fw-bold text-dark mb-1">{{ prenotazioni_passate|length }}</h3>
+                                        <p class="text-muted small mb-0">Completate</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Lista delle prenotazioni dell'escursionista -->
+                            <!-- PROSSIME AVVENTURE: solo uscite ancora da svolgere -->
                             <h6 class="fw-bold mt-4 mb-3 border-bottom pb-2">Le tue prossime avventure</h6>
                             <div class="list-group list-group-flush">
-                                {% for prenotazione in mie_prenotazioni %}
+                                {% for prenotazione in prenotazioni_future %}
                                     <div class="list-group-item px-0 bg-transparent d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
 
                                         <!-- Dettagli Escursione -->
@@ -240,34 +246,59 @@
                                             </div>
                                         </div>
 
-                                        <!-- Badge di Stato e Tasto Cancella -->
+                                        <!-- Badge di Stato e Tasto Disdici -->
                                         <div class="d-flex flex-column align-items-end gap-2">
                                             <div>
                                                 {% if prenotazione.stato == 'confermata' %}
                                                     <span class="badge bg-success shadow-sm"><i class="bi bi-check-circle me-1"></i>Confermata</span>
                                                 {% elif prenotazione.stato == 'attesa' %}
                                                     <span class="badge bg-warning text-dark shadow-sm"><i class="bi bi-hourglass-split me-1"></i>In Attesa</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger shadow-sm">Cancellata</span>
                                                 {% endif %}
                                             </div>
 
-                                            <!-- Form sicuro per la disdetta (Mostrato solo se la prenotazione è attiva) -->
-                                            {% if prenotazione.stato != 'cancellata' %}
-                                                <form action="{% url 'cancella_prenotazione' prenotazione.id %}" method="POST" class="m-0" onsubmit="return confirm('Confermi di voler disdire in modo irreversibile questa prenotazione?');">
-                                                    {% csrf_token %}
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-3 px-2 py-1 shadow-sm" style="font-size: 0.8rem;">
-                                                        <i class="bi bi-x-circle me-1"></i> Disdici
-                                                    </button>
-                                                </form>
-                                            {% endif %}
+                                            <!-- Disdetta possibile solo sulle uscite future (queste lo sono
+                                                 tutte per costruzione); il termine delle 24h è poi applicato
+                                                 lato view in cancella_prenotazione. -->
+                                            <form action="{% url 'cancella_prenotazione' prenotazione.id %}" method="POST" class="m-0" onsubmit="return confirm('Confermi di voler disdire in modo irreversibile questa prenotazione?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm rounded-3 px-2 py-1 shadow-sm" style="font-size: 0.8rem;">
+                                                    <i class="bi bi-x-circle me-1"></i> Disdici
+                                                </button>
+                                            </form>
                                         </div>
 
                                     </div>
                                 {% empty %}
-                                    <p class="text-muted small mt-2">Non hai ancora prenotato nessuna uscita. Esplora i sentieri disponibili!</p>
+                                    <p class="text-muted small mt-2">Non hai uscite in programma. Esplora i sentieri disponibili!</p>
                                 {% endfor %}
                             </div>
+
+                            <!-- STORICO ATTIVITÀ: uscite già svolte, senza disdetta, in una
+                                 sezione collassata e a scorrimento interno così non allunga la
+                                 pagina anche con molte partecipazioni. -->
+                            {% if prenotazioni_passate %}
+                                <h6 class="fw-bold mt-5 mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
+                                    <span><i class="bi bi-clock-history text-muted me-2"></i>Storico attività</span>
+                                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#storicoAttivita" aria-expanded="false" aria-controls="storicoAttivita">
+                                        {{ prenotazioni_passate|length }} completate
+                                    </button>
+                                </h6>
+                                <div class="collapse" id="storicoAttivita">
+                                    <div class="list-group list-group-flush" style="max-height: 320px; overflow-y: auto;">
+                                        {% for prenotazione in prenotazioni_passate %}
+                                            <div class="list-group-item px-0 bg-transparent d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                                <div>
+                                                    <a href="{% url 'dettaglio_escursione' prenotazione.uscita.escursione.id %}" class="text-decoration-none fw-bold text-dark fs-6">{{ prenotazione.uscita.escursione.titolo }}</a>
+                                                    <div class="small text-muted mt-1">
+                                                        <i class="bi bi-calendar-check text-muted me-1"></i>{{ prenotazione.uscita.data_ritrovo|date:"d F Y, H:i" }}
+                                                    </div>
+                                                </div>
+                                                <span class="badge bg-light text-muted border"><i class="bi bi-flag-fill me-1"></i>Completata</span>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
 
                             {% if raccomandazioni_esperienza or raccomandazioni_simili %}
                                 <div class="mt-5 pt-3 border-top">
