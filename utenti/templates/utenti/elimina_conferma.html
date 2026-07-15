@@ -1,37 +1,45 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Elimina Account - WayPoint{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow-sm border-0 border-top border-danger border-4">
-                <div class="card-body p-4 text-center">
-                    
-                    <div class="text-danger mb-3">
-                        <i class="bi bi-exclamation-diamond-fill display-4"></i>
-                    </div>
-                    
-                    <h4 class="fw-bold text-dark mb-2">Rimozione Account</h4>
-                    <p class="text-muted small mb-4">
-                        Confermi di voler eliminare l'account <strong>@{{ user.username }}</strong>? 
-                        L'operazione rimuoverà definitivamente la tua utenza dal sistema.
-                    </p>
+<div class="position-relative d-flex align-items-center justify-content-center" style="min-height: 85vh; background-image: url('{% static 'images/slide5.jpg' %}'); background-size: cover; background-position: center;">
 
-                    <form method="POST">
-                        {% csrf_token %}
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-danger py-2 fw-bold">
-                                <i class="bi bi-trash3-fill me-2"></i>Sì, procedi con la rimozione
-                            </button>
-                            <a href="{% url 'profilo' %}" class="btn btn-light py-2 text-secondary border">
-                                Annulla e ritorna
-                            </a>
+    <div style="background-color: rgba(0, 0, 0, 0.4); position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;"></div>
+
+    <div class="container position-relative py-5" style="z-index: 1;">
+        <div class="row justify-content-center">
+            <div class="col-11 col-sm-10 col-md-8 col-lg-6">
+
+                <div class="card shadow-lg border-0 rounded-4 border-top border-danger border-4" style="background-color: rgba(255, 255, 255, 0.95);">
+                    <div class="card-body p-4 p-sm-5 text-center">
+
+                        <div class="d-inline-flex align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-circle mb-3 shadow-sm" style="width: 70px; height: 70px;">
+                            <i class="bi bi-exclamation-diamond-fill fs-1"></i>
                         </div>
-                    </form>
 
+                        <h3 class="fw-bold text-dark mb-2">Rimozione Account</h3>
+                        <p class="text-muted small mb-4">
+                            Confermi di voler eliminare l'account <strong>@{{ user.username }}</strong>?
+                            L'operazione rimuoverà definitivamente la tua utenza dal sistema.
+                        </p>
+
+                        <form method="POST">
+                            {% csrf_token %}
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-danger btn-lg py-2 fw-bold rounded-3 shadow-sm">
+                                    <i class="bi bi-trash3-fill me-2"></i>Sì, procedi con la rimozione
+                                </button>
+                                <a href="{% url 'profilo' %}" class="btn btn-light py-2 text-secondary border rounded-3">
+                                    Annulla e ritorna
+                                </a>
+                            </div>
+                        </form>
+
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>

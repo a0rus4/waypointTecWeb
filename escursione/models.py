@@ -122,6 +122,29 @@ class Escursione(models.Model):
     class Meta:
         verbose_name_plural = "Escursioni"
 
+    @property
+    def classe_difficolta(self):
+        """
+        Restituisce le classi CSS Bootstrap da applicare al badge della
+        difficoltà, secondo uno schema "semaforo" che comunica a colpo d'occhio
+        il livello di impegno richiesto:
+          - T  (Turistico)       -> verde bosco (facile)
+          - E  (Escursionistico) -> ocra        (medio)
+          - EE (Esperti)         -> terracotta  (difficile)
+        Le tonalità effettive (desaturate/terrose) sono definite nelle classi
+        .badge-diff-* nel <style> globale di base.html.
+        Centralizzare qui la mappa colore (anziché duplicare degli {% if %} in
+        ogni template) garantisce che il badge appaia identico in tutte le
+        pagine che lo mostrano (home, dettaglio, profilo) e rende banale un
+        eventuale futuro cambio di palette o l'aggiunta di una difficoltà.
+        Il fallback su 'bg-secondary' protegge da valori imprevisti.
+        """
+        return {
+            'T': 'badge-diff-t',
+            'E': 'badge-diff-e',
+            'EE': 'badge-diff-ee',
+        }.get(self.difficolta, 'bg-secondary text-white')
+
     # =========================================================================
     # PROPERTY CALCOLATE: RATING E REPUTAZIONE
     # =========================================================================

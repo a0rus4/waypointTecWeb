@@ -289,7 +289,7 @@
                                                         {% for esc in raccomandazioni_esperienza %}
                                                             <li class="list-group-item bg-white border-0 mb-1 rounded-3 shadow-sm d-flex justify-content-between align-items-center">
                                                                 <a href="{% url 'dettaglio_escursione' esc.id %}" class="text-decoration-none fw-bold text-dark small text-truncate" style="max-width: 70%;">{{ esc.titolo }}</a>
-                                                                <span class="badge bg-light text-dark border">{{ esc.get_difficolta_display }}</span>
+                                                                <span class="badge {{ esc.classe_difficolta }}">{{ esc.get_difficolta_display }}</span>
                                                             </li>
                                                         {% endfor %}
                                                     </ul>

@@ -4,6 +4,18 @@
 {% block title %}Trova il tuo Sentiero{% endblock %}
 
 {% block content %}
+<style>
+    /* Bootstrap colora lo switch attivo con il colore "primary" (blu): qui lo
+       riportiamo al verde del tema WayPoint, coerente col resto della sidebar. */
+    #checkDisponibili:checked {
+        background-color: var(--bs-success);
+        border-color: var(--bs-success);
+    }
+    #checkDisponibili:focus {
+        border-color: var(--bs-success);
+        box-shadow: 0 0 0 .25rem rgba(25, 135, 84, .25);
+    }
+</style>
 <!-- CAROUSEL HERO -->
 <div id="waypointCarousel" class="carousel slide carousel-fade mb-5" data-bs-ride="carousel">
 
@@ -117,61 +129,101 @@
     </button>
 </div>
 
-<!-- BARRA FILTRI AVANZATI -->
-<div class="container my-4">
-    <div class="card shadow-sm border-0 rounded-4 bg-white">
-        <div class="card-body p-4">
-            <h6 class="fw-bold text-success mb-3"><i class="bi bi-funnel-fill me-2"></i>Filtra i risultati</h6>
-            <form method="GET" action="{% url 'core:home' %}" class="row g-3 align-items-end">
-                <!-- Mantiene attiva la query di testo anche quando si usano i filtri -->
-                <input type="hidden" name="q" value="{{ ricerca_attuale }}">
+<!-- CATALOGO: SIDEBAR FILTRI + GRIGLIA RISULTATI -->
+<div class="container container-wide my-5">
+    <div class="row g-4">
 
-                <div class="col-md-3">
-                    <label for="id_difficolta" class="form-label small fw-bold text-muted">Difficoltà Tecnica</label>
-                    <select id="id_difficolta" name="difficolta" class="form-select border-success border-opacity-25 bg-light">
-                        <option value="">Tutte le difficoltà</option>
-                        <option value="T" {% if difficolta_attuale == 'T' %}selected{% endif %}>Turistico (T)</option>
-                        <option value="E" {% if difficolta_attuale == 'E' %}selected{% endif %}>Escursionistico (E)</option>
-                        <option value="EE" {% if difficolta_attuale == 'EE' %}selected{% endif %}>Esperti (EE)</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label for="id_dislivello" class="form-label small fw-bold text-muted">Dislivello Massimo (m)</label>
-                    <input id="id_dislivello" type="number" name="dislivello" min="0" step="50" class="form-control border-success border-opacity-25 bg-light" placeholder="Es. 800" value="{{ dislivello_attuale }}">
-                </div>
-
-                <div class="col-md-3">
-                    <label for="id_data_da" class="form-label small fw-bold text-muted">A partire dal giorno</label>
-                    <input id="id_data_da" type="date" name="data_da" class="form-control border-success border-opacity-25 bg-light" value="{{ data_da_attuale }}">
-                </div>
-
-                <div class="col-md-3 d-flex flex-column gap-2">
-                    <div class="form-check mt-1">
-                        <input class="form-check-input border-success" type="checkbox" name="solo_disponibili" value="true" id="checkDisponibili" {% if solo_disponibili_attuale %}checked{% endif %}>
-                        <label class="form-check-label text-dark small fw-bold" for="checkDisponibili">
-                            Solo con posti liberi
-                        </label>
+        <!-- ===================== SIDEBAR FILTRI ===================== -->
+        <aside class="col-lg-3">
+            <div class="card shadow-sm border-0 rounded-4 bg-white sticky-lg-top" style="top: 1.5rem;">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-funnel-fill me-2"></i>Filtri</h5>
+                        {% if filtri_attivi %}
+                            <span class="badge bg-success rounded-pill px-3 py-2">{{ filtri_attivi }} attiv{{ filtri_attivi|pluralize:"o,i" }}</span>
+                        {% endif %}
                     </div>
-                    <button type="submit" class="btn btn-success fw-bold w-100 shadow-sm">Applica Filtri</button>
+
+                    <form method="GET" action="{% url 'core:home' %}">
+                        <!-- Mantiene attiva la query di testo (campo di ricerca del carosello) anche quando si usano i filtri -->
+                        <input type="hidden" name="q" value="{{ ricerca_attuale }}">
+
+                        <div class="mb-3">
+                            <label for="id_difficolta" class="form-label small fw-bold text-muted"><i class="bi bi-bar-chart-steps me-1"></i>Difficoltà Tecnica</label>
+                            <select id="id_difficolta" name="difficolta" class="form-select border-success border-opacity-25 bg-light">
+                                <option value="">Tutte le difficoltà</option>
+                                <option value="T" {% if difficolta_attuale == 'T' %}selected{% endif %}>Turistico (T)</option>
+                                <option value="E" {% if difficolta_attuale == 'E' %}selected{% endif %}>Escursionistico (E)</option>
+                                <option value="EE" {% if difficolta_attuale == 'EE' %}selected{% endif %}>Esperti (EE)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_zona" class="form-label small fw-bold text-muted"><i class="bi bi-geo-alt me-1"></i>Zona Geografica</label>
+                            <select id="id_zona" name="zona" class="form-select border-success border-opacity-25 bg-light">
+                                <option value="">Tutte le zone</option>
+                                {% for zona in zone_disponibili %}
+                                    <option value="{{ zona.id }}" {% if zona_attuale == zona.id|stringformat:'s' %}selected{% endif %}>{{ zona.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_dislivello" class="form-label small fw-bold text-muted"><i class="bi bi-graph-up-arrow me-1"></i>Dislivello Massimo (m)</label>
+                            <input id="id_dislivello" type="number" name="dislivello" min="0" step="50" class="form-control border-success border-opacity-25 bg-light" placeholder="Es. 800" value="{{ dislivello_attuale }}">
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <div class="mb-3">
+                            <label for="id_data_da" class="form-label small fw-bold text-muted"><i class="bi bi-calendar-event me-1"></i>A partire dal giorno</label>
+                            <input id="id_data_da" type="date" name="data_da" class="form-control border-success border-opacity-25 bg-light" value="{{ data_da_attuale }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_data_a" class="form-label small fw-bold text-muted"><i class="bi bi-calendar-check me-1"></i>Fino al giorno</label>
+                            <input id="id_data_a" type="date" name="data_a" class="form-control border-success border-opacity-25 bg-light" value="{{ data_a_attuale }}">
+                        </div>
+
+                        <div class="form-check form-switch mb-3 ps-0 d-flex align-items-center justify-content-between">
+                            <label class="form-check-label text-dark small fw-bold" for="checkDisponibili"><i class="bi bi-person-check me-1"></i>Solo con posti liberi</label>
+                            <input class="form-check-input ms-2 mt-0" type="checkbox" role="switch" name="solo_disponibili" value="true" id="checkDisponibili" {% if solo_disponibili_attuale %}checked{% endif %}>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <div class="mb-3">
+                            <label for="id_ordinamento" class="form-label small fw-bold text-muted"><i class="bi bi-sort-down me-1"></i>Ordina per</label>
+                            <select id="id_ordinamento" name="ordinamento" class="form-select border-success border-opacity-25 bg-light">
+                                <option value="data" {% if ordinamento_attuale == 'data' %}selected{% endif %}>Data più vicina</option>
+                                <option value="rating" {% if ordinamento_attuale == 'rating' %}selected{% endif %}>Più amati</option>
+                                <option value="dislivello_asc" {% if ordinamento_attuale == 'dislivello_asc' %}selected{% endif %}>Dislivello (crescente)</option>
+                                <option value="dislivello_desc" {% if ordinamento_attuale == 'dislivello_desc' %}selected{% endif %}>Dislivello (decrescente)</option>
+                                <option value="titolo" {% if ordinamento_attuale == 'titolo' %}selected{% endif %}>Titolo (A-Z)</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success fw-bold rounded-pill shadow-sm"><i class="bi bi-funnel me-1"></i>Applica Filtri</button>
+                            <a href="{% url 'core:home' %}" class="btn btn-outline-secondary fw-bold rounded-pill"><i class="bi bi-arrow-counterclockwise me-1"></i>Azzera</a>
+                        </div>
+                    </form>
                 </div>
-            </form>
-        </div>
-    </div>
-</div>
+            </div>
+        </aside>
 
-<!-- GRIGLIA RISULTATI -->
-<div class="container my-5">
-    <div class="d-flex align-items-center mb-4">
-        <h2 class="fw-extrabold text-dark mb-0 me-2">Esplora i Sentieri</h2>
-        {% if ricerca_attuale or difficolta_attuale or dislivello_attuale or data_da_attuale or solo_disponibili_attuale %}
-            <span class="badge bg-light text-success border border-success rounded-pill px-3">Risultati filtrati</span>
-        {% endif %}
-    </div>
+        <!-- ===================== GRIGLIA RISULTATI ===================== -->
+        <div class="col-lg-9">
+            <div class="d-flex align-items-center mb-4">
+                <h2 class="fw-extrabold text-dark mb-0 me-2">Esplora i Sentieri</h2>
+                {% if ricerca_attuale or difficolta_attuale or zona_attuale or dislivello_attuale or data_da_attuale or data_a_attuale or solo_disponibili_attuale %}
+                    <span class="badge bg-light text-success border border-success rounded-pill px-3">Risultati filtrati</span>
+                {% endif %}
+            </div>
 
-    <div class="row">
+            <div class="row">
         {% for esc in escursioni %}
-        <div class="col-md-4 mb-4">
+        <div class="col-md-6 col-xl-4 mb-4">
             <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden bg-white">
 
                 {% if esc.foto_copertina %}
@@ -179,8 +231,23 @@
                 {% endif %}
 
                 <div class="card-body p-4 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge bg-success fw-bold px-2 py-1">Difficoltà: {{ esc.get_difficolta_display }}</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge {{ esc.classe_difficolta }} fw-bold px-2 py-1">Difficoltà: {{ esc.get_difficolta_display }}</span>
+
+                        <!-- Valutazione media (stelle piene fino al voto, poi vuote) -->
+                        {% if esc.num_recensioni %}
+                            <span class="text-nowrap" title="{{ esc.rating_medio|floatformat:1 }} su 5 · {{ esc.num_recensioni }} recensioni">
+                                <span class="text-warning">
+                                    {% for i in "12345" %}
+                                        <i class="bi {% if forloop.counter <= esc.rating_medio %}bi-star-fill{% else %}bi-star{% endif %}" style="font-size: .8rem;"></i>
+                                    {% endfor %}
+                                </span>
+                                <span class="small fw-bold text-dark ms-1">{{ esc.rating_medio|floatformat:1 }}</span>
+                                <span class="small text-muted">({{ esc.num_recensioni }})</span>
+                            </span>
+                        {% else %}
+                            <span class="small text-muted text-nowrap"><i class="bi bi-star me-1"></i>Nessuna recensione</span>
+                        {% endif %}
                     </div>
 
                     <h4 class="card-title fw-bold text-dark mb-2">{{ esc.titolo }}</h4>
@@ -228,7 +295,7 @@
             {% if escursioni.has_previous %}
                 <li class="page-item">
                     <!-- Manteniamo attivi i filtri passandoli nell'URL -->
-                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.previous_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">
+                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.previous_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&zona={{ zona_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&data_a={{ data_a_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}&ordinamento={{ ordinamento_attuale }}">
                         <i class="bi bi-chevron-left me-1"></i> Precedente
                     </a>
                 </li>
@@ -246,7 +313,7 @@
                     </li>
                 {% else %}
                     <li class="page-item">
-                        <a class="page-link text-success" href="?page={{ num }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">{{ num }}</a>
+                        <a class="page-link text-success" href="?page={{ num }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&zona={{ zona_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&data_a={{ data_a_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}&ordinamento={{ ordinamento_attuale }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
@@ -254,7 +321,7 @@
             <!-- Tasto Successiva (Attivo o Disabilitato) -->
             {% if escursioni.has_next %}
                 <li class="page-item">
-                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.next_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}">
+                    <a class="page-link text-success fw-bold" href="?page={{ escursioni.next_page_number }}&q={{ ricerca_attuale }}&difficolta={{ difficolta_attuale }}&zona={{ zona_attuale }}&dislivello={{ dislivello_attuale }}&data_da={{ data_da_attuale }}&data_a={{ data_a_attuale }}&solo_disponibili={{ solo_disponibili_attuale }}&ordinamento={{ ordinamento_attuale }}">
                         Successiva <i class="bi bi-chevron-right ms-1"></i>
                     </a>
                 </li>
@@ -267,5 +334,7 @@
         </ul>
     </nav>
 
-</div>
+        </div><!-- /.col-lg-9 (risultati) -->
+    </div><!-- /.row -->
+</div><!-- /.container -->
 {% endblock %}

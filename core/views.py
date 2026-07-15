@@ -20,9 +20,9 @@
 
 from django.shortcuts import render
 from django.utils import timezone
-from django.db.models import Q, Min, F
+from django.db.models import Q, Min, F, Avg, Count
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from escursione.models import Escursione
+from escursione.models import Escursione, ZonaGeografica
 
 
 def home(request):
@@ -58,11 +58,22 @@ def home(request):
     # nel calcolo del minimo), senza escludere l'intera riga Escursione dal
     # risultato: un'escursione con sole uscite passate compare comunque, ma
     # con prossima_data=None.
+    # rating_medio / num_recensioni: calcolati in SQL insieme a prossima_data, così
+    # il voto si mostra e si ordina senza N+1 (evitiamo la property punteggio_medio,
+    # che eseguirebbe una query di aggregazione separata per ogni card).
+    # NOTA sul JOIN multiplo: il queryset attraversa già la relazione 1-a-N
+    # uscite_programmate; aggiungendo un'aggregazione anche su recensioni, l'SQL
+    # produce un prodotto delle due relazioni (n_uscite × n_recensioni righe per
+    # escursione). Per questo num_recensioni usa distinct=True (altrimenti
+    # conterebbe ogni recensione una volta per uscita). Avg, invece, resta corretto
+    # anche con la duplicazione: essendo uniforme, non altera la media.
     lista_escursioni = Escursione.objects.filter(approvata=True).annotate(
         prossima_data=Min(
             'uscite_programmate__data_ritrovo',
             filter=Q(uscite_programmate__data_ritrovo__gt=timezone.now())
-        )
+        ),
+        rating_medio=Avg('recensioni__voto'),
+        num_recensioni=Count('recensioni', distinct=True),
     )
 
     # -------------------------------------------------------------------
@@ -77,9 +88,12 @@ def home(request):
     # prima di usarla in un confronto.
     ricerca = request.GET.get('q', '').replace('None', '').strip()
     difficolta_scelta = request.GET.get('difficolta', '').replace('None', '').strip()
+    zona_scelta = request.GET.get('zona', '').replace('None', '').strip()
     dislivello_max = request.GET.get('dislivello', '').replace('None', '').strip()
     data_da = request.GET.get('data_da', '').replace('None', '').strip()
+    data_a = request.GET.get('data_a', '').replace('None', '').strip()
     solo_disponibili = request.GET.get('solo_disponibili', '').replace('None', '').strip()
+    ordinamento = request.GET.get('ordinamento', '').replace('None', '').strip()
 
     # -------------------------------------------------------------------
     # 3. FILTRI IN CASCATA (ognuno è condizionale e opzionale)
@@ -107,6 +121,14 @@ def home(request):
     if difficolta_scelta in difficolta_valide:
         lista_escursioni = lista_escursioni.filter(difficolta=difficolta_scelta)
 
+    # --- Filtro zona geografica ---
+    # La zona è una ForeignKey verso ZonaGeografica: dalla tendina arriva l'id
+    # (chiave primaria) della zona scelta. .isdigit() protegge int() da input
+    # non numerici manipolati nell'URL; se l'id non corrisponde a nessuna zona
+    # esistente il filtro semplicemente non restituisce risultati (nessun 500).
+    if zona_scelta.isdigit():
+        lista_escursioni = lista_escursioni.filter(zona_geografica_id=int(zona_scelta))
+
     # --- Filtro dislivello massimo ---
     # .isdigit() verifica che la stringa sia composta solo da cifre prima di
     # convertirla con int(): evita un ValueError (e quindi un errore 500) se
@@ -120,6 +142,15 @@ def home(request):
     if data_da:
         lista_escursioni = lista_escursioni.filter(
             uscite_programmate__data_ritrovo__date__gte=data_da
+        )
+
+    # --- Filtro data massima di partenza (estremo superiore dell'intervallo) ---
+    # Combinato con data_da permette di cercare uscite in una finestra temporale
+    # precisa (es. "solo nel weekend del 12-13"). __date__lte confronta la sola
+    # parte data, inclusivo dell'estremo scelto.
+    if data_a:
+        lista_escursioni = lista_escursioni.filter(
+            uscite_programmate__data_ritrovo__date__lte=data_a
         )
 
     # --- Filtro "solo posti disponibili" ---
@@ -157,10 +188,22 @@ def home(request):
     # comparire per prime (comportamento di default di SQLite per i NULL in
     # ordine crescente). A parità di data, '-id' mostra prima gli inserimenti
     # più recenti.
-    lista_escursioni = lista_escursioni.distinct().order_by(
-        F('prossima_data').asc(nulls_last=True),
-        '-id'
-    )
+    # L'ordinamento è scelto dall'utente tramite una tendina, ma NON si passa
+    # mai il valore grezzo a order_by(): si usa una mappa "whitelist" che
+    # traduce una chiave sicura (es. 'dislivello_asc') nella reale espressione
+    # di ordinamento. Così un valore arbitrario manipolato nell'URL non può
+    # raggiungere order_by() (che altrimenti solleverebbe un errore su un campo
+    # inesistente); qualsiasi chiave non prevista ricade sul default 'data'.
+    ordinamenti_validi = {
+        'data': [F('prossima_data').asc(nulls_last=True), '-id'],
+        'rating': [F('rating_medio').desc(nulls_last=True), '-id'],
+        'dislivello_asc': ['dislivello', '-id'],
+        'dislivello_desc': ['-dislivello', '-id'],
+        'titolo': ['titolo', '-id'],
+    }
+    if ordinamento not in ordinamenti_validi:
+        ordinamento = 'data'
+    lista_escursioni = lista_escursioni.distinct().order_by(*ordinamenti_validi[ordinamento])
 
     # -------------------------------------------------------------------
     # 5. IMPAGINAZIONE (Paginator)
@@ -194,13 +237,26 @@ def home(request):
     # "attuale" di ogni filtro: serve a ripopolare i campi del form di ricerca
     # con la scelta fatta dall'utente (altrimenti, cambiando pagina, il form
     # si "dimenticherebbe" i filtri applicati).
+    # Conteggio dei filtri di ricerca attivi (esclusi ordinamento, che non
+    # restringe i risultati, e la ricerca testuale, che vive nel carosello):
+    # serve solo a mostrare un badge "N attivi" nell'intestazione della sidebar.
+    filtri_attivi = sum(bool(x) for x in [
+        difficolta_scelta, zona_scelta, dislivello_max,
+        data_da, data_a, solo_disponibili == 'true',
+    ])
+
     context = {
         'escursioni': escursioni_paginate,
+        'zone_disponibili': ZonaGeografica.objects.all(),
+        'filtri_attivi': filtri_attivi,
         'ricerca_attuale': ricerca,
         'difficolta_attuale': difficolta_scelta,
+        'zona_attuale': zona_scelta,
         'dislivello_attuale': dislivello_max,
         'data_da_attuale': data_da,
+        'data_a_attuale': data_a,
         'solo_disponibili_attuale': solo_disponibili,
+        'ordinamento_attuale': ordinamento,
     }
 
     return render(request, 'core/home.html', context)

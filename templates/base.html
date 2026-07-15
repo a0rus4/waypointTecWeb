@@ -4,7 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <title> WayPoint - {% block title %} Home {% endblock %} </title>
 
@@ -52,17 +51,76 @@
         .text-waypoint { color: #008543 !important; }
         .btn-waypoint { background-color: #008543; color: white; border: none; }
         .btn-waypoint:hover { background-color: #006637; color: white; }
+
+        /* Bootstrap non definisce fw-extrabold: la aggiungiamo noi (il peso 800
+           del font Plus Jakarta Sans è già caricato) così la classe, usata in
+           più template, produce davvero il grassetto extra previsto. */
+        .fw-extrabold { font-weight: 800 !important; }
+
+        /* --- BADGE DIFFICOLTÀ (palette terrosa/naturale) ---
+           Tonalità desaturate e più scure dei colori pieni di Bootstrap, per
+           uno schema "semaforo" morbido e coerente col verde del brand.
+           Le classi sono restituite da Escursione.classe_difficolta, così il
+           colore è definito in un unico punto (qui) per tutto il sito. */
+        .badge-diff-t  { background-color: #2e6b4f; color: #fff; }  /* Turistico  (facile)     */
+        .badge-diff-e  { background-color: #b07d2b; color: #fff; }  /* Escursionistico (medio) */
+        .badge-diff-ee { background-color: #a1493c; color: #fff; }  /* Esperti    (difficile)  */
+
+        /* --- CONTENITORE CATALOGO PIÙ LARGO SUI MONITOR GRANDI ---
+           Il .container di Bootstrap si ferma a 1320px, lasciando margini
+           laterali molto ampi sugli schermi ultrawide. Affiancando questa
+           classe al .container, alziamo il limite a 1600px SOLO da 1400px in su
+           (sotto restano invariati i breakpoint responsive di Bootstrap). */
+        @media (min-width: 1400px) {
+            .container-wide { max-width: 1600px; }
+        }
+
+        /* --- FOOTER A TEMA MONTAGNA ---
+           Sfondo verde profondo (coerente col brand #008543) con una silhouette
+           di montagne in SVG che emerge dal bordo superiore: leggero, nessuna
+           immagine da scaricare, ma immediatamente riconoscibile come "montagna". */
+        .app-footer {
+            position: relative;
+            color: #d9ebe0;
+            background: linear-gradient(180deg, #0d5236 0%, #082e1b 100%);
+        }
+        .footer-mountains {
+            display: block;
+            width: 100%;
+            height: 48px;
+            margin-top: -46px;   /* fa "sbucare" le cime sopra il footer */
+            position: relative;
+            z-index: 1;
+        }
+        .app-footer a { color: #bfe0cd; text-decoration: none; transition: color .2s ease; }
+        .app-footer a:hover { color: #ffffff; }
+        .footer-brand { font-weight: 800; font-size: 1.15rem; color: #fff; }
+        .footer-heading {
+            color: #fff; font-weight: 700; font-size: .75rem;
+            text-transform: uppercase; letter-spacing: .06em; opacity: .8; margin-bottom: .6rem;
+        }
+        .footer-links li { margin-bottom: .35rem; }
+        .footer-social {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,.10); color: #fff !important;
+        }
+        .footer-social:hover { background: rgba(255,255,255,.22); }
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,.12);
+            font-size: .85rem; color: #9dc0ac;
+        }
     </style>
 
     {% block head %} {% endblock %}
 </head>
 <body>
 
-    <header class="app-header">
+    <header class="app-header" id="top">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-overlay py-3">
             <div class="container-fluid px-4">
 
-                <a class="navbar-brand fw-extrabold fs-4 tracking-tight d-flex align-items-center text-white" href="{% url 'core:home' %}">
+                <a class="navbar-brand fw-extrabold fs-4 d-flex align-items-center text-white" href="{% url 'core:home' %}">
                     <img src="{% static 'images/logo.png' %}" alt="Logo WayPoint" height="50" class="me-2">
                     WayPoint
                 </a>
@@ -78,13 +136,6 @@
 
 
                         {% if user.is_authenticated %}
-                            {% if "Guida" in user.groups.first.name %}
-                                <li class="nav-item ms-2"> <a class="nav-link fw-semibold text-white" href="#">I miei Sentieri</a> </li>
-                                <li class="nav-item ms-2"> <a class="btn btn-outline-light btn-sm fw-bold rounded-pill" href="#">+ Crea Escursione</a> </li>
-                            {% elif "Escursionista" in user.groups.first.name %}
-                                <li class="nav-item ms-2"> <a class="nav-link fw-semibold text-white" href="#">Le mie Iscrizioni</a> </li>
-                            {% endif %}
-
                             <li class="nav-item dropdown ms-3">
                                 <a class="nav-link dropdown-toggle fw-bold text-white" href="#" data-bs-toggle="dropdown">
                                     <i class="bi bi-person-circle me-1"></i> {{ user.username }}
@@ -107,7 +158,7 @@
                                 </ul>
                             </li>
                         {% else %}
-                            <li class="nav-item ms-2"> <a class="btn btn-success btn-waypoint px-4 btn-sm fw-bold rounded-pill" href="{% url 'login' %}">Accedi</a> </li>
+                            <li class="nav-item ms-2"> <a class="btn btn-waypoint px-4 btn-sm fw-bold rounded-pill" href="{% url 'login' %}">Accedi</a> </li>
                         {% endif %}
 
                     </ul>
@@ -166,10 +217,65 @@
 
     </main>
 
-    <footer class="app-footer border-top text-center text-muted py-4 mt-auto">
-        <div class="container">
-            <p class="mb-1 fw-bold text-waypoint fs-5"><i class="bi bi-compass-fill me-1"></i> WayPoint Hiking System</p>
-            <p class="small mb-0">Progetto di Tecnologie Web | Autore: Francesco Ezio Garuffi</p>
+    <footer class="app-footer mt-auto">
+
+        <!-- Silhouette montagne (decorativa) -->
+        <svg class="footer-mountains" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path d="M0,90 L0,52 L210,18 L430,58 L650,22 L880,56 L1090,20 L1300,48 L1440,26 L1440,90 Z" fill="#156944"/>
+            <path d="M0,90 L0,66 L170,40 L380,74 L580,36 L780,70 L1000,38 L1200,72 L1380,44 L1440,58 L1440,90 Z" fill="#0d5236"/>
+        </svg>
+
+        <div class="container container-wide py-3">
+            <div class="row gy-3">
+
+                <!-- Brand + claim -->
+                <div class="col-lg-5 pe-lg-5">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo WayPoint" height="32" class="me-2">
+                        <span class="footer-brand">WayPoint</span>
+                    </div>
+                    <p class="small mb-2" style="max-width: 360px; line-height: 1.45;">
+                        Il tuo punto di riferimento per escursioni e trekking guidati,
+                        tra le vette e i sentieri più belli d'Italia.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="https://github.com/a0rus4/waypointTecWeb" target="_blank" rel="noopener" class="footer-social" aria-label="Repository GitHub"><i class="bi bi-github"></i></a>
+                    </div>
+                </div>
+
+                <!-- Naviga -->
+                <div class="col-6 col-lg-3">
+                    <h6 class="footer-heading">Naviga</h6>
+                    <ul class="list-unstyled footer-links small mb-0">
+                        <li><a href="{% url 'core:home' %}"><i class="bi bi-house-door me-2"></i>Home</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'profilo' %}"><i class="bi bi-person-circle me-2"></i>Il mio profilo</a></li>
+                        {% else %}
+                            <li><a href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i>Accedi</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+
+                <!-- Il progetto -->
+                <div class="col-6 col-lg-4">
+                    <h6 class="footer-heading">Il progetto</h6>
+                    <p class="small mb-2" style="line-height: 1.6;">
+                        <i class="bi bi-mortarboard me-2"></i>Progetto per l'esame di <strong>Tecnologie Web</strong>.
+                    </p>
+                    <p class="small mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>Modena, Italia
+                    </p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Barra copyright -->
+        <div class="footer-bottom">
+            <div class="container container-wide py-2 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+                <span>&copy; {% now "Y" %} WayPoint · Francesco Ezio Garuffi</span>
+                <a href="#top" class="d-inline-flex align-items-center"><i class="bi bi-arrow-up-circle me-1"></i>Torna su</a>
+            </div>
         </div>
     </footer>
 
